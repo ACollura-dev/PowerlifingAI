@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Collura/Seth Planner v7.2</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      margin: 0;
+      padding: 1rem;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding-bottom: 3rem;
+    }
+    h1 { font-size: 1.4rem; text-align: center; margin-bottom: 0.25rem; color: #38bdf8; }
+    .subtitle { text-align:center; font-size:0.8rem; color:#64748b; margin-top:0; margin-bottom:1rem; }
+    
+    .card {
+      background: #1e293b;
+      border-radius: 0.75rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      border: 1px solid #334155;
+    }
+
+    /* USER SELECTOR */
+    .user-selector { display: flex; margin-bottom: 1rem; background: #0f172a; border-radius: 2rem; border: 1px solid #475569; padding: 4px; }
+    .user-btn { flex: 1; padding: 0.6rem; border: none; background: transparent; color: #64748b; font-weight: 800; border-radius: 1.5rem; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; transition: all 0.2s; }
+    .user-btn.active-anthony { background: #6366f1; color: white; box-shadow: 0 2px 10px rgba(99, 102, 241, 0.4); }
+    .user-btn.active-seth { background: #22c55e; color: #022c22; box-shadow: 0 2px 10px rgba(34, 197, 94, 0.4); }
+    
+    /* LIFT SELECTOR */
+    .lift-selector { display: flex; gap: 0.5rem; margin-bottom: 1rem; background: #020617; padding: 0.3rem; border-radius: 0.6rem; border: 1px solid #334155; }
+    .lift-btn { flex: 1; padding: 0.6rem; border: none; background: transparent; color: #64748b; font-weight: 800; border-radius: 0.4rem; cursor: pointer; text-transform: uppercase; font-size: 0.9rem; transition: all 0.2s; }
+    .lift-btn.active-squat { background: #38bdf8; color: #0f172a; box-shadow: 0 0 10px rgba(56,189,248,0.3); }
+    .lift-btn.active-bench { background: #f472b6; color: #0f172a; box-shadow: 0 0 10px rgba(244,114,182,0.3); }
+
+    label { display: block; font-size: 0.75rem; margin-bottom: 0.25rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    input, select {
+      width: 100%; padding: 0.6rem; border-radius: 0.5rem; border: 1px solid #475569;
+      background: #0f172a; color: #e2e8f0; font-size: 1rem; box-sizing: border-box; margin-bottom: 1rem;
+    }
+    input:focus, select:focus { outline: 2px solid #38bdf8; border-color: #38bdf8; }
+    
+    button {
+      width: 100%; padding: 0.75rem; font-size: 1rem; border-radius: 0.5rem;
+      border: none; background: #38bdf8; color: #0f172a; font-weight: 700; cursor: pointer; margin-top: 0.5rem;
+    }
+    .btn-secondary { background: #334155; color: #e2e8f0; font-size: 0.8rem; padding: 0.5rem 0.8rem; width: auto; display: inline-block; margin-right: 0.5rem; margin-bottom: 0.5rem; }
+    
+    .row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .row > div { flex: 1; min-width: 0; }
+    
+    .output-label { font-size: 0.7rem; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; margin-top: 0.2rem; }
+    .output-value { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.25rem; color: #f1f5f9; }
+    .note { font-size: 0.8rem; color: #94a3b8; margin-top: 0.25rem; line-height: 1.4; }
+    
+    /* Day Mode Switcher */
+    #modeSwitcher { display: flex; background: #0f172a; border-radius: 0.5rem; padding: 0.25rem; margin-bottom: 1rem; border: 1px solid #334155; }
+    .mode-btn { flex: 1; padding: 0.6rem; text-align: center; cursor: pointer; font-size: 0.85rem; color: #64748b; border-radius: 0.35rem; font-weight: 600; transition: all 0.2s; }
+    .mode-btn.active { background: #1e293b; color: #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    /* Dynamic Active Colors */
+    .squat-theme .mode-btn.active { color: #38bdf8; }
+    .bench-theme .mode-btn.active { color: #f472b6; }
+    .squat-theme h1 { color: #38bdf8; }
+    .bench-theme h1 { color: #f472b6; }
+    .squat-theme button { background: #38bdf8; }
+    .bench-theme button { background: #f472b6; }
+
+    /* Pivot & Status */
+    .pivot-container { display: flex; align-items: center; justify-content: space-between; background: #1e1b4b; border: 1px solid #312e81; padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 0.5rem; }
+    .pivot-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+    .pivot-switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #0f172a; transition:.4s; border-radius: 24px; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition:.4s; border-radius: 50%; }
+    input:checked +.slider { background-color: #6366f1; }
+    input:checked +.slider:before { transform: translateX(20px); }
+
+    .protocol-banner { background: #7f1d1d; border: 1px solid #ef4444; color: #fca5a5; padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 1rem; font-size: 0.85rem; font-weight: bold; text-align: center; display: none; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { opacity: 0.9; } 50% { opacity: 1; } 100% { opacity: 0.9; } }
+
+    .wave-progress { display: flex; margin-bottom: 1rem; gap: 4px; }
+    .wave-step { flex: 1; height: 6px; background: #334155; border-radius: 3px; }
+    .wave-step.active { background: #fff; box-shadow: 0 0 5px #fff; }
+    .wave-step.completed { background: #64748b; }
+    .squat-theme .wave-step.active { background: #38bdf8; box-shadow: 0 0 8px #38bdf8; }
+    .squat-theme .wave-step.completed { background: #0ea5e9; }
+    .bench-theme .wave-step.active { background: #f472b6; box-shadow: 0 0 8px #f472b6; }
+    .bench-theme .wave-step.completed { background: #db2777; }
+
+    .plate-box { background: #020617; padding: 0.75rem; border-radius: 0.5rem; margin-top: 0.5rem; border: 1px solid #1e293b; font-family: monospace; color: #cbd5e1; font-size: 0.9rem; white-space: pre-wrap; }
+    .rec-box { background: #0c4a6e; border-left: 4px solid #0ea5e9; color: #e0f2fe; padding: 0.75rem; border-radius: 0.25rem; margin-bottom: 1rem; font-size: 0.9rem; }
+    .hidden-section { display: none; }
+    
+    .status-green { background: #064e3b; color: #6ee7b7; border: 1px solid #059669; }
+    .status-yellow { background: #422006; color: #fcd34d; border: 1px solid #d97706; }
+    .status-box { text-align: center; padding: 0.75rem; margin-bottom: 1rem; border-radius: 0.5rem; font-weight: bold; display: none; font-size: 0.85rem; }
+
+    #graphContainer { width: 100%; height: 180px; border: 1px solid #334155; border-radius: 0.5rem; margin-top: 1rem; background: #0f172a; position: relative; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.75rem; margin-top: 0.5rem; }
+    th, td { border: 1px solid #334155; padding: 0.5rem; text-align: center; }
+    th { background: #020617; color: #94a3b8; }
+    tbody tr:nth-child(even) { background: #0f172a; }
+  </style>
+</head>
+<body class="squat-theme">
+
+  <div class="user-selector">
+      <button id="btnUserAnthony" class="user-btn active-anthony" onclick="switchUser('Anthony')">Anthony</button>
+      <button id="btnUserSeth" class="user-btn" onclick="switchUser('Seth')">Seth</button>
+  </div>
+
+  <div class="lift-selector">
+      <button id="btnSelectSquat" class="lift-btn active-squat" onclick="switchLift('squat')">Squat</button>
+      <button id="btnSelectBench" class="lift-btn" onclick="switchLift('bench')">Bench</button>
+  </div>
+
+  <h1 id="appTitle">SQUAT PLANNER</h1>
+  <p class="subtitle" id="dayDisplay">Initializing...</p>
+
+  <div id="modeSwitcher">
+      <div id="btnHeavy" class="mode-btn" onclick="setMode('heavy')">HEAVY (Skill)</div>
+      <div id="btnVol" class="mode-btn" onclick="setMode('vol')">VOLUME (Wave)</div>
+  </div>
+
+  <div id="systemStatus" class="status-box">Checking System Status...</div>
+  <div id="protocolBanner" class="protocol-banner">⚠️ FATIGUE LIMIT EXCEEDED<br>SYSTEM OVERRIDE: PIVOT MODE ENGAGED</div>
+
+  <div class="card" style="padding: 0.5rem 1rem;">
+      <div class="pivot-container">
+          <div>
+              <div style="color: #c7d2fe; font-size: 0.85rem; font-weight: bold;">Pivot Mode (Recovery)</div>
+              <div style="font-size:0.7rem; color:#818cf8;">Reduces Loads & Pauses Wave</div>
+          </div>
+          <label class="pivot-switch">
+              <input type="checkbox" id="pivotMode" onchange="togglePivot()">
+              <span class="slider"></span>
+          </label>
+      </div>
+  </div>
+
+  <div class="card" id="inputCard">
+    <h2>Session Log (<span id="loggerName">Anthony</span>)</h2>
+    <input id="date" type="date">
+
+    <div id="sectionHeavy">
+        <div id="heavySuggestionBox" class="rec-box" style="display:none;"></div>
+        
+        <label for="prevVol">1. Last Volume Weight (Auto-filled)</label>
+        <input id="prevVol" type="number" inputmode="decimal" placeholder="e.g. 365">
+
+        <label for="heavySingle" id="lblHeavySingle">2. Today's Skill Single (RPE 8)</label>
+        <input id="heavySingle" type="number" inputmode="decimal" placeholder="e.g. 475" oninput="liveUpdateHeavy()">
+        
+        <div id="warmupPreviewHeavy" class="plate-box" style="display:none;"></div>
+
+        <div class="row">
+          <div>
+            <label>RPE (Cap at 8)</label>
+            <input id="heavyRpe" type="number" inputmode="decimal" step="0.5" placeholder="8.0" oninput="liveUpdateHeavy()">
+          </div>
+          <div>
+            <label>Quality</label>
+            <select id="heavyQuality" onchange="liveUpdateHeavy()">
+              <option value="good">Clean (RPE ≤8)</option>
+              <option value="avg" selected>Okay</option>
+              <option value="bad">Grindy (RPE 9+)</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="row">
+           <div>
+            <label style="color:#f87171;">Overshot Target?</label>
+            <select id="overshoot" onchange="liveUpdateHeavy()">
+              <option value="no" selected>No</option>
+              <option value="yes">Yes (Force Hold)</option>
+            </select>
+           </div>
+           <div>
+            <label style="color:#f87171;">Failed Backdowns?</label>
+            <select id="backdownFail" onchange="liveUpdateHeavy()">
+              <option value="no" selected>No</option>
+              <option value="yes">Yes (Regression)</option>
+            </select>
+           </div>
+        </div>
+    </div>
+
+    <div id="sectionVol" class="hidden-section">
+        <div style="margin-bottom:1rem; font-size:0.9rem;">
+             <div class="output-label">Current Wave Step</div>
+             <div class="wave-progress">
+                 <div id="step1" class="wave-step"></div>
+                 <div id="step2" class="wave-step"></div>
+                 <div id="step3" class="wave-step"></div>
+             </div>
+             <div id="volContextText" style="color:#94a3b8;">Loading Wave...</div>
+        </div>
+
+        <label for="volActual">Work Weight Used</label>
+        <input id="volActual" type="number" inputmode="decimal" oninput="previewVolWarmup()">
+        
+        <div id="warmupPreviewVol" class="plate-box" style="display:none;"></div>
+
+        <div class="row">
+            <div>
+                 <label>RPE (Optional)</label>
+                 <input id="volRpe" type="number" inputmode="decimal" step="0.5" placeholder="e.g. 7.0">
+            </div>
+            <div>
+                <label>Success?</label>
+                <select id="volFail">
+                  <option value="no" selected>Yes, hit all reps.</option>
+                  <option value="yes">No, missed reps.</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="note" style="margin-bottom:1rem; margin-top:0.5rem;" id="volInstruction"></div>
+    </div>
+
+    <button onclick="calculateAndSave()">LOG SESSION</button>
+  </div>
+
+  <div class="card">
+    <h2>Results & Targets</h2>
+    <div class="row">
+      <div id="resBackdown">
+        <div class="output-label">Backdown Volume <span class="tag">3x3</span></div>
+        <div id="backdownOut" class="output-value">–</div>
+        <div class="note" id="backdownNote">@ 82% of Single</div>
+        <div id="plateLoadingBox" class="plate-box" style="display:none;"></div>
+      </div>
+      
+      <div id="resVolTarget">
+        <div class="output-label" id="lblVolTarget">Next Wave Target</div>
+        <div id="volTargetOut" class="output-value">–</div>
+        <div class="note" id="volNote">Logic pending...</div>
+        <div id="volPlateLoadingBox" class="plate-box" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="card">
+      <h2>History & Trend</h2>
+      <div style="margin-bottom: 0.5rem;">
+        <button class="btn-secondary" onclick="exportData()">Export ALL Data</button>
+        <input type="file" id="importFile" style="display:none" onchange="importData(this)">
+        <button class="btn-secondary" onclick="document.getElementById('importFile').click()">Import</button>
+      </div>
+      <div id="graphContainer"></div>
+      <div style="overflow-x:auto; max-height:200px; margin-top:1rem;">
+          <table id="historyTable">
+            <thead><tr><th>Date</th><th>Single</th><th>Wave</th><th>Weight</th></tr></thead>
+            <tbody></tbody>
+          </table>
+      </div>
+      <button class="btn-secondary" style="background:#ef4444; margin-top:1rem;" onclick="clearHistory()">Reset Current User</button>
+  </div>
+
+<script>
+    const KEY_PREFIX = 'collura_v7_'; 
+    
+    let currentUser = 'Anthony'; 
+    let currentLift = 'squat'; 
+    let currentMode = 'heavy'; 
+    let pivotActive = false;
+    let systemOverride = false;
+    let currentWaveStep = 4;
+
+    function getStorageKey() { 
+        return `${KEY_PREFIX}${currentUser}_${currentLift.toUpperCase()}`;
+    }
+    
+    function roundTo5(x) { return Math.round(x / 5) * 5; }
+
+    function getPlateLoading(weight) {
+        if(!weight || weight < 45) return "Bar";
+        let target = (weight - 45) / 2;
+        let plates = [45, 35, 25, 10, 5, 2.5];
+        let result = [];
+        for(let p of plates) {
+            while(target >= p) { result.push(p); target -= p; }
+        }
+        return result.length ? result.join(" + ") : "Bar";
+    }
+
+    function generateWarmup(target) {
+        if(!target || target < 45) return "";
+        let warmups = [];
+        let milestones = [135, 185, 225, 275, 315, 365, 405, 455, 495, 545, 585];
+        if (currentLift === 'bench') milestones = [135, 185, 225, 275, 315, 365, 405];
+        warmups.push("Bar");
+        milestones.forEach(m => { if(m <= target - 35) warmups.push(m); });
+        let lastWeight = warmups.length > 1 ? warmups[warmups.length-1] : 45;
+        let gap = target - lastWeight;
+        if(gap > 50) {
+            let bridge = roundTo5(lastWeight + (gap * 0.6));
+            if (bridge < target - 15) warmups.push(bridge);
+        }
+        return warmups.join(", ") + ", Top";
+    }
+
+    // --- LOGIC ---
+    function generateHeavySuggestion(history, isPivot) {
+        if (!history || history.length === 0) return null;
+        const last = history[history.length - 1];
+        if (!last.heavySingle) return null;
+
+        let baseTarget = last.heavySingle;
+        let baseReason = "";
+
+        if (last.backdownFail === 'yes') {
+            baseTarget = roundTo5(last.heavySingle * 0.90);
+            baseReason = "Backdown Fail.";
+        } else if (last.overshoot === 'yes' || (last.heavyRpe && last.heavyRpe >= 9.5)) {
+            baseTarget = roundTo5(last.heavySingle * 0.92);
+            baseReason = `Overshoot Correction.`;
+        } else if (last.heavyRpe && last.heavyRpe >= 9) {
+             baseTarget = last.heavySingle;
+             baseReason = "Hold RPE 8.";
+        } else if (last.heavyQuality === 'good' && last.heavyRpe <= 8) {
+            baseTarget = last.heavySingle + 5;
+            baseReason = "Clean RPE 8.";
+        } else {
+            baseReason = "Maintenance.";
+        }
+
+        if (isPivot) {
+            const pivotTarget = roundTo5(baseTarget * 0.85); 
+            return { target: pivotTarget, text: `${baseReason} Base ${baseTarget}. Pivot (-15%): Try ${pivotTarget}` };
+        }
+        return { target: baseTarget, text: `${baseReason} Try ${baseTarget}` };
+    }
+
+    function calculateWaveTarget(history, pivot) {
+        let lastRealVol = null;
+        for(let i=history.length-1; i>=0; i--) {
+            if(history[i].volActual && !history[i].pivot) { lastRealVol = history[i]; break; }
+        }
+
+        if (pivot) {
+             let refWeight = lastRealVol ? lastRealVol.volActual : (currentLift==='squat'?365:225);
+             let targetWeight = roundTo5(refWeight * 0.85);
+             return { weight: targetWeight, reps: 3, note: "Pivot: Light Technical Work", isPause: true };
+        }
+
+        let targetWeight = (currentLift === 'squat') ? 365 : 225;
+        let targetReps = 4; 
+        let note = "Wave Start";
+
+        if (lastRealVol) {
+            const success = (lastRealVol.volFail === 'no');
+            const prevReps = lastRealVol.volReps || 4;
+            const prevWeight = lastRealVol.volActual;
+
+            if (success) {
+                if (prevReps === 4) {
+                    targetWeight = prevWeight;
+                    targetReps = 5;
+                    note = "Step Up: Add Volume (3x5)";
+                } else if (prevReps === 5) {
+                    targetWeight = prevWeight;
+                    targetReps = 6;
+                    note = "Step Up: Peak Volume (3x6)";
+                } else if (prevReps >= 6) {
+                    targetWeight = prevWeight + 5;
+                    targetReps = 4;
+                    note = "Wave Complete! +5lbs, Reset to 3x4";
+                }
+            } else {
+                targetWeight = prevWeight;
+                targetReps = prevReps;
+                note = "Missed Reps. Retry same weight/reps.";
+            }
+        }
+        return { weight: targetWeight, reps: targetReps, note, isPause: false };
+    }
+
+    function clearInputFields() {
+        document.getElementById('heavySingle').value = '';
+        document.getElementById('heavyRpe').value = '';
+        document.getElementById('volActual').value = '';
+        document.getElementById('volRpe').value = '';
+        document.getElementById('backdownOut').textContent = '–';
+        document.getElementById('warmupPreviewHeavy').style.display = 'none';
+        document.getElementById('warmupPreviewVol').style.display = 'none';
+        document.getElementById('plateLoadingBox').style.display = 'none';
+        document.getElementById('volPlateLoadingBox').style.display = 'none';
+        // Reset Dropdowns
+        document.getElementById('heavyQuality').value = 'avg';
+        document.getElementById('overshoot').value = 'no';
+        document.getElementById('backdownFail').value = 'no';
+    }
+
+    function switchUser(user) {
+        currentUser = user;
+        document.getElementById('loggerName').textContent = user;
+        
+        const btnA = document.getElementById('btnUserAnthony');
+        const btnS = document.getElementById('btnUserSeth');
+        if(user === 'Anthony') {
+            btnA.className = 'user-btn active-anthony';
+            btnS.className = 'user-btn';
+        } else {
+            btnA.className = 'user-btn';
+            btnS.className = 'user-btn active-seth';
+        }
+
+        // HARD RESET OF ALL STATES
+        pivotActive = false;
+        systemOverride = false;
+        document.getElementById('pivotMode').checked = false;
+        document.getElementById('pivotMode').disabled = false;
+        document.getElementById('protocolBanner').style.display = 'none';
+        
+        clearInputFields(); 
+        runSystemAutopilot();
+        renderHistory();
+        setMode(currentMode);
+    }
+
+    function switchLift(lift) {
+        currentLift = lift;
+        const sBtn = document.getElementById('btnSelectSquat');
+        const bBtn = document.getElementById('btnSelectBench');
+        const body = document.body;
+        const title = document.getElementById('appTitle');
+
+        if (lift === 'squat') {
+            sBtn.className = 'lift-btn active-squat';
+            bBtn.className = 'lift-btn';
+            body.className = 'squat-theme';
+            title.textContent = "SQUAT PLANNER";
+        } else {
+            sBtn.className = 'lift-btn';
+            bBtn.className = 'lift-btn active-bench';
+            body.className = 'bench-theme';
+            title.textContent = "BENCH PLANNER";
+        }
+        
+        // HARD RESET ON LIFT SWITCH TOO
+        pivotActive = false;
+        systemOverride = false;
+        document.getElementById('pivotMode').checked = false;
+        document.getElementById('pivotMode').disabled = false;
+        document.getElementById('protocolBanner').style.display = 'none';
+        
+        clearInputFields();
+        runSystemAutopilot(); 
+        renderHistory();
+        setMode(currentMode); 
+    }
+
+    function runSystemAutopilot() {
+        const h = getHistory();
+        const recent = h.slice(-5);
+        let badCount = 0; let failCount = 0;
+        
+        recent.forEach(e => {
+            if (e.heavyQuality === 'bad' || e.overshoot === 'yes' || e.backdownFail === 'yes') badCount++;
+            if (e.volFail === 'yes') failCount++;
+        });
+
+        const statusBox = document.getElementById('systemStatus');
+        const banner = document.getElementById('protocolBanner');
+        const pivotSwitch = document.getElementById('pivotMode');
+
+        if (badCount >= 2 || failCount >= 2) {
+            // RED: OVERRIDE
+            systemOverride = true;
+            pivotSwitch.checked = true;
+            pivotSwitch.disabled = true;
+            pivotActive = true;
+            statusBox.style.display = 'none';
+            banner.style.display = 'block';
+        } else if (badCount > 0 || failCount > 0) {
+            // YELLOW: CAUTION
+            systemOverride = false;
+            pivotSwitch.disabled = false;
+            banner.style.display = 'none';
+            statusBox.style.display = 'block';
+            statusBox.className = 'status-box status-yellow';
+            statusBox.textContent = "SYSTEM CAUTION: RECENT OVERSHOOT DETECTED";
+            
+            // Auto-check pivot if it's not set, but don't disable it
+            // Actually better to leave it to user choice in yellow state, just warn them.
+        } else {
+            // GREEN: NOMINAL
+            systemOverride = false;
+            pivotSwitch.disabled = false;
+            banner.style.display = 'none';
+            statusBox.style.display = 'block';
+            statusBox.className = 'status-box status-green';
+            statusBox.textContent = "SYSTEM NOMINAL: READY TO TRAIN";
+        }
+        
+        togglePivot(true);
+    }
+
+    function togglePivot(skipCheck) {
+        if (!skipCheck) pivotActive = document.getElementById('pivotMode').checked;
+        const lbl = document.getElementById('lblHeavySingle');
+        const note = document.getElementById('backdownNote');
+        
+        if(pivotActive) {
+            lbl.textContent = `2. Today's Pivot Single (${currentLift === 'squat' ? 'Pause Squat' : 'Tempo Bench'})`;
+            note.textContent = "@ 75% (Pivot Adjustment)";
+        } else {
+            lbl.textContent = "2. Today's Skill Single (Comp Lift)";
+            note.textContent = "@ 82% of Single";
+        }
+        updateSuggestionDisplay();
+        liveUpdateHeavy();
+        if(currentMode === 'vol') setMode('vol');
+    }
+
+    function liveUpdateHeavy() {
+        const prevVol = parseFloat(document.getElementById('prevVol').value || 0);
+        const heavySingle = parseFloat(document.getElementById('heavySingle').value || 0);
+        
+        const percentage = pivotActive ? 0.75 : 0.82;
+        const bd = roundTo5(heavySingle * percentage);
+        document.getElementById('backdownOut').textContent = (bd > 0) ? bd + " lb" : "–";
+        
+        if (bd > 0) {
+            document.getElementById('plateLoadingBox').textContent = "Load: " + getPlateLoading(bd);
+            document.getElementById('plateLoadingBox').style.display = 'block';
+            document.getElementById('warmupPreviewHeavy').textContent = "Warmup: " + generateWarmup(heavySingle);
+            document.getElementById('warmupPreviewHeavy').style.display = 'block';
+        } else {
+             document.getElementById('plateLoadingBox').style.display = 'none';
+             document.getElementById('warmupPreviewHeavy').style.display = 'none';
+        }
+
+        const h = getHistory();
+        const nextVol = calculateWaveTarget(h, pivotActive);
+        const tag = nextVol.isPause ? "3x3 Technical" : `3x${nextVol.reps}`;
+        document.getElementById('lblVolTarget').textContent = `Next Wave Target (${tag})`;
+        document.getElementById('volTargetOut').textContent = nextVol.weight + " lb";
+        document.getElementById('volNote').textContent = nextVol.note;
+        document.getElementById('volPlateLoadingBox').textContent = "Load: " + getPlateLoading(nextVol.weight);
+        document.getElementById('volPlateLoadingBox').style.display = 'block';
+    }
+
+    function previewVolWarmup() {
+        const val = parseFloat(document.getElementById('volActual').value);
+        if(!val) return;
+        const wBox = document.getElementById('warmupPreviewVol');
+        wBox.textContent = "Warmup: " + generateWarmup(val);
+        wBox.style.display = 'block';
+    }
+
+    function updateSuggestionDisplay() {
+        const h = getHistory();
+        const box = document.getElementById('heavySuggestionBox');
+        
+        // If no history, hide box and return
+        if(!h || h.length === 0) {
+            box.style.display = 'none';
+            return;
+        }
+
+        const sugg = generateHeavySuggestion(h, pivotActive);
+        if(sugg) {
+            box.style.display = 'block';
+            box.textContent = "💡 " + sugg.text;
+        } else {
+            box.style.display = 'none';
+        }
+    }
+
+    function updateWaveVisuals(reps) {
+        document.getElementById('step1').className = 'wave-step';
+        document.getElementById('step2').className = 'wave-step';
+        document.getElementById('step3').className = 'wave-step';
+        
+        if (reps >= 4) document.getElementById('step1').classList.add('active');
+        if (reps >= 5) {
+            document.getElementById('step1').classList.add('completed');
+            document.getElementById('step2').classList.add('active');
+        }
+        if (reps >= 6) {
+            document.getElementById('step1').classList.add('completed');
+            document.getElementById('step2').classList.add('completed');
+            document.getElementById('step3').classList.add('active');
+        }
+    }
+
+    function setMode(mode) {
+        currentMode = mode;
+        const hBtn = document.getElementById('btnHeavy');
+        const vBtn = document.getElementById('btnVol');
+        const hSec = document.getElementById('sectionHeavy');
+        const vSec = document.getElementById('sectionVol');
+
+        if(mode === 'heavy') {
+            hBtn.className = 'mode-btn active'; vBtn.className = 'mode-btn';
+            hSec.style.display = 'block'; vSec.style.display = 'none';
+            
+            const h = getHistory();
+            if(h.length > 0) {
+                const last = h[h.length-1];
+                document.getElementById('prevVol').value = last.volActual || (currentLift==='squat'?365:225);
+            } else {
+                document.getElementById('prevVol').value = (currentLift==='squat'?365:225);
+            }
+            updateSuggestionDisplay();
+            liveUpdateHeavy();
+        } else {
+            hBtn.className = 'mode-btn'; vBtn.className = 'mode-btn active';
+            hSec.style.display = 'none'; vSec.style.display = 'block';
+            
+            const h = getHistory();
+            const res = calculateWaveTarget(h, pivotActive);
+            
+            document.getElementById('volContextText').textContent = res.note;
+            document.getElementById('volActual').value = res.weight;
+            document.getElementById('volInstruction').textContent = pivotActive ? 
+                "Pivot Active: Technical work only. Don't push volume." : 
+                `Goal: Complete 3 sets of ${res.reps} reps.`;
+            
+            currentWaveStep = res.reps;
+            updateWaveVisuals(currentWaveStep);
+
+            document.getElementById('volTargetOut').textContent = res.weight + " lb";
+            const tag = pivotActive ? "3x3 Tech" : `3x${res.reps}`;
+            document.getElementById('volNote').textContent = `Target: ${tag}`;
+            document.getElementById('volPlateLoadingBox').textContent = "Load: " + getPlateLoading(res.weight);
+            document.getElementById('volPlateLoadingBox').style.display = 'block';
+            
+            previewVolWarmup();
+        }
+    }
+
+    function calculateAndSave() {
+        const date = document.getElementById('date').value;
+        const h = getHistory();
+
+        if(currentMode === 'heavy') {
+            const prevVol = parseFloat(document.getElementById('prevVol').value || 0);
+            const heavySingle = parseFloat(document.getElementById('heavySingle').value || 0);
+            const quality = document.getElementById('heavyQuality').value;
+            const rpe = parseFloat(document.getElementById('heavyRpe').value || 0);
+            const overshoot = document.getElementById('overshoot').value;
+            const backdownFail = document.getElementById('backdownFail').value;
+            
+            const nextVol = calculateWaveTarget(h, pivotActive);
+            
+            const entry = {
+                date, prevVol, heavySingle, heavyQuality: quality, heavyRpe: rpe,
+                overshoot, backdownFail, volTarget: nextVol.weight,
+                pivot: pivotActive,
+                volActual: null, volFail: 'no', volRpe: null, volReps: null
+            };
+            h.push(entry);
+            saveHistory(h);
+            alert("Logged for " + currentUser + "! Next Wave Target: " + nextVol.weight + " for 3x" + nextVol.reps);
+        } else {
+            if(h.length === 0) return alert("Log Heavy day first.");
+            const last = h[h.length-1];
+            last.volActual = parseFloat(document.getElementById('volActual').value || 0);
+            last.volRpe = parseFloat(document.getElementById('volRpe').value || 0);
+            last.volFail = document.getElementById('volFail').value;
+            last.volReps = currentWaveStep; 
+            h[h.length-1] = last;
+            saveHistory(h);
+            alert("Wave Logged for " + currentUser + "!");
+        }
+        location.reload();
+    }
+
+    function getHistory() { try { return JSON.parse(localStorage.getItem(getStorageKey())) || []; } catch { return []; } }
+    function saveHistory(h) { localStorage.setItem(getStorageKey(), JSON.stringify(h)); }
+    
+    function renderHistory() {
+        const h = getHistory();
+        const tbody = document.querySelector('#historyTable tbody');
+        tbody.innerHTML = "";
+        [...h].reverse().forEach(e => {
+            const waveDisplay = e.volReps ? `3x${e.volReps}` : '-';
+            const waveStatus = e.volFail === 'yes' ? '❌' : '✅';
+            const pivotMarker = e.pivot ? '<span style="color:#fca5a5">[PIVOT]</span> ' : '';
+            const row = `<tr>
+                <td>${e.date}</td>
+                <td>${pivotMarker}${e.heavySingle}</td>
+                <td>${waveDisplay} ${waveStatus}</td>
+                <td>${e.volActual || '-'}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+        drawGraph(h);
+    }
+    
+    function drawGraph(h) {
+        const container = document.getElementById('graphContainer');
+        if(h.length < 2) return container.innerHTML = "<div style='text-align:center; padding-top:80px; font-size:0.8rem; color:#64748b;'>Log 2 sessions to see trend</div>";
+        const data = h.map(e => e.heavySingle).filter(v => v > 0);
+        if(data.length < 2) return; 
+
+        const max = Math.max(...data) + 15;
+        const min = Math.min(...data) - 15;
+        const hRange = max - min;
+        let pts = "";
+        const w = container.clientWidth;
+        const step = w / (data.length - 1);
+        data.forEach((val, i) => {
+            const x = i * step;
+            const y = 180 - ((val - min) / hRange * 160) - 10;
+            pts += `${x},${y} `;
+        });
+        const stroke = currentLift === 'squat' ? '#38bdf8' : '#f472b6';
+        container.innerHTML = `<svg width="100%" height="100%"><polyline points="${pts}" fill="none" stroke="${stroke}" stroke-width="3"/></svg>`;
+    }
+
+    function exportData() {
+        let combined = {};
+        for (let i = 0; i < localStorage.length; i++){
+            let key = localStorage.key(i);
+            if(key.startsWith(KEY_PREFIX)) {
+                combined[key] = JSON.parse(localStorage.getItem(key));
+            }
+        }
+        const a = document.createElement("a");
+        a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(combined));
+        a.download = "collura_seth_v7.json";
+        a.click();
+    }
+    function importData(el) {
+        const r = new FileReader();
+        r.onload = e => { 
+            if(confirm("Overwrite history?")) { 
+                const data = JSON.parse(e.target.result);
+                for (const [key, value] of Object.entries(data)) {
+                     localStorage.setItem(key, JSON.stringify(value));
+                }
+                location.reload(); 
+            } 
+        };
+        r.readAsText(el.files);
+    }
+    function clearHistory() { if(confirm("Clear current lift data for " + currentUser + "?")) { localStorage.removeItem(getStorageKey()); location.reload(); } }
+
+    function attemptMigration() {
+        const v6Squat = localStorage.getItem('colluraHistory_SQUAT_v6');
+        const v6Bench = localStorage.getItem('colluraHistory_BENCH_v6');
+        const v7Squat = localStorage.getItem('collura_v7_Anthony_SQUAT');
+        const v7Bench = localStorage.getItem('collura_v7_Anthony_BENCH');
+        
+        if(v6Squat && !v7Squat) localStorage.setItem('collura_v7_Anthony_SQUAT', v6Squat);
+        if(v6Bench && !v7Bench) localStorage.setItem('collura_v7_Anthony_BENCH', v6Bench);
+    }
+
+    window.onload = function() {
+        attemptMigration();
+        document.getElementById('date').value = new Date().toISOString().slice(0,10);
+        runSystemAutopilot();
+        renderHistory();
+        
+        const day = new Date().getDay();
+        if(day === 2 || day === 3) { 
+            setMode('heavy');
+            document.getElementById('dayDisplay').textContent = "Focus: Skill Maintenance";
+        } else { 
+            setMode('vol');
+            document.getElementById('dayDisplay').textContent = "Focus: Base Building";
+        }
+    }
+</script>
+</body>
+</html>

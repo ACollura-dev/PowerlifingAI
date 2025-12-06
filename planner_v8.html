@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Vena-AI Planner v8.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <!-- CDNs -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="squat-theme">
+
+    <div class="user-selector">
+        <button id="btnUserAnthony" class="user-btn active-anthony">Anthony</button>
+        <button id="btnUserSeth" class="user-btn">Seth</button>
+    </div>
+
+    <div class="lift-selector">
+        <button id="btnSelectSquat" class="lift-btn active-squat">Squat</button>
+        <button id="btnSelectBench" class="lift-btn">Bench</button>
+    </div>
+
+    <h1 id="appTitle">SQUAT PLANNER</h1>
+    
+    <!-- Tab Nav -->
+    <div class="tab-nav" style="justify-content: center; border:none; margin-bottom: 0.5rem;">
+        <span id="tab-planner" class="tab-link active">PLANNER</span>
+        <span id="tab-analysis" class="tab-link">ANALYSIS</span>
+    </div>
+
+    <!-- VIEW: PLANNER -->
+    <div id="view-planner" class="view-section active">
+        
+        <p class="subtitle" id="dayDisplay">Initializing...</p>
+        
+        <!-- NEW: Methodology Status Banner -->
+        <div id="methodologyStatus" class="methodology-box" style="display:none;"></div>
+
+        <div id="modeSwitcher">
+            <div id="btnHeavy" class="mode-btn">HEAVY (Skill)</div>
+            <div id="btnVol" class="mode-btn">VOLUME (Wave)</div>
+        </div>
+
+        <div id="systemStatus" class="status-box">Checking System Status...</div>
+        <div id="protocolBanner" class="protocol-banner">⚠️ FATIGUE LIMIT EXCEEDED<br>SYSTEM OVERRIDE: PIVOT MODE ENGAGED</div>
+
+        <!-- Pivot Card -->
+        <div class="card" style="padding: 0.5rem 1rem;">
+            <div class="pivot-container">
+                <div>
+                    <div style="color: #c7d2fe; font-size: 0.85rem; font-weight: bold;">Pivot Mode (Recovery)</div>
+                    <div style="font-size:0.7rem; color:#818cf8;">Reduces Loads & Pauses Wave</div>
+                </div>
+                <label class="pivot-switch">
+                    <input type="checkbox" id="pivotMode">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <!-- NEW: Readiness Card (AI Input) -->
+        <div class="card">
+            <h2 style="font-size: 1rem; color: #a5b4fc; margin-bottom: 0.5rem;">🧠 AI Readiness</h2>
+            <div class="row">
+                <div class="range-group">
+                    <label>Sleep (1-5)</label>
+                    <input type="range" id="sleep-score" min="1" max="5" value="3" step="1">
+                    <span id="sleep-val" class="range-val">3</span>
+                </div>
+                <div class="range-group">
+                    <label>Stress (1-5)</label>
+                    <input type="range" id="stress-score" min="1" max="5" value="3" step="1">
+                    <span id="stress-val" class="range-val">3</span>
+                </div>
+            </div>
+            <div id="ai-prediction">AI Target: Predicting...</div>
+        </div>
+
+        <!-- Input Card -->
+        <div class="card" id="inputCard">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2>Session Log (<span id="loggerName">Anthony</span>)</h2>
+                <button id="voice-btn" class="icon-btn" title="Voice Command">🎤</button>
+            </div>
+            
+            <input id="date" type="date">
+
+            <!-- HEAVY SECTION -->
+            <div id="sectionHeavy">
+                <div id="heavySuggestionBox" class="rec-box" style="display:none;"></div>
+                
+                <label for="prevVol">1. Last Volume Weight (Auto-filled)</label>
+                <input id="prevVol" type="number" inputmode="decimal" placeholder="e.g. 365">
+
+                <label for="heavySingle" id="lblHeavySingle">2. Today's Skill Single (RPE 8)</label>
+                <input id="heavySingle" type="number" inputmode="decimal" placeholder="e.g. 475">
+                <div id="warmupPreviewHeavy" class="plate-box" style="display:none;"></div>
+
+                <div class="row">
+                    <div>
+                        <label>RPE (Cap at 8)</label>
+                        <input id="heavyRpe" type="number" inputmode="decimal" step="0.5" placeholder="8.0">
+                    </div>
+                    <div>
+                        <label>Quality</label>
+                        <select id="heavyQuality">
+                            <option value="good">Clean (RPE ≤8)</option>
+                            <option value="avg" selected>Okay</option>
+                            <option value="bad">Grindy (RPE 9+)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div>
+                        <label style="color:#f87171;">Overshot Target?</label>
+                        <select id="overshoot">
+                            <option value="no" selected>No</option>
+                            <option value="yes">Yes (Force Hold)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="color:#f87171;">Failed Backdowns?</label>
+                        <select id="backdownFail">
+                            <option value="no" selected>No</option>
+                            <option value="yes">Yes (Regression)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VOLUME SECTION -->
+            <div id="sectionVol" class="hidden-section">
+                <div style="margin-bottom:1rem; font-size:0.9rem;">
+                    <div class="output-label">Current Wave Step</div>
+                    <div class="wave-progress">
+                        <div id="step1" class="wave-step"></div>
+                        <div id="step2" class="wave-step"></div>
+                        <div id="step3" class="wave-step"></div>
+                    </div>
+                    <div id="volContextText" style="color:#94a3b8;">Loading Wave...</div>
+                </div>
+
+                <label for="volActual">Work Weight Used</label>
+                <input id="volActual" type="number" inputmode="decimal">
+                <div id="warmupPreviewVol" class="plate-box" style="display:none;"></div>
+
+                <div class="row">
+                    <div>
+                        <label>RPE (Optional)</label>
+                        <input id="volRpe" type="number" inputmode="decimal" step="0.5" placeholder="e.g. 7.0">
+                    </div>
+                    <div>
+                        <label>Success?</label>
+                        <select id="volFail">
+                            <option value="no" selected>Yes, hit all reps.</option>
+                            <option value="yes">No, missed reps.</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="note" style="margin-bottom:1rem; margin-top:0.5rem;" id="volInstruction"></div>
+            </div>
+
+            <button id="btnLogSession">LOG SESSION</button>
+        </div>
+
+        <div class="card">
+            <h2>Results & Targets</h2>
+            <div class="row">
+                <div id="resBackdown">
+                    <div class="output-label">Backdown Volume <span class="tag">3x3</span></div>
+                    <div id="backdownOut" class="output-value">–</div>
+                    <div class="note" id="backdownNote">@ 82% of Single</div>
+                    <div id="plateLoadingBox" class="plate-box" style="display:none;"></div>
+                </div>
+                <div id="resVolTarget">
+                    <div class="output-label" id="lblVolTarget">Next Wave Target</div>
+                    <div id="volTargetOut" class="output-value">–</div>
+                    <div class="note" id="volNote">Logic pending...</div>
+                    <div id="volPlateLoadingBox" class="plate-box" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- VIEW: ANALYSIS -->
+    <div id="view-analysis" class="view-section">
+        <div class="card">
+            <h2>Analysis & History</h2>
+            
+            <div style="margin-bottom: 0.5rem;">
+                <button class="btn-secondary" id="btnExport">Export ALL Data</button>
+                <input type="file" id="importFile" style="display:none">
+                <button class="btn-secondary" id="btnImportTrigger">Import</button>
+            </div>
+
+            <div id="graphContainer">
+                <canvas id="progress-chart" width="400" height="180"></canvas>
+            </div>
+            
+            <div class="card" style="margin-top: 1rem; background: #020617;">
+                <h3>Consistency Heatmap</h3>
+                <div id="heatmap-container" class="heatmap-grid"></div>
+            </div>
+
+            <div style="overflow-x:auto; max-height:200px; margin-top:1rem;">
+                <table id="historyTable">
+                    <thead><tr><th>Date</th><th>Single</th><th>Wave</th><th>Weight</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <button class="btn-secondary" style="background:#ef4444; margin-top:1rem;" id="btnClearHistory">Reset Current User</button>
+        </div>
+    </div>
+
+    <!-- App Logic Scripts -->
+    <script src="js/storage.js"></script>
+    <script src="js/ai_model.js"></script>
+    <script src="js/logic_gates.js"></script>
+    <script src="js/ui_renderer.js"></script>
+    <script src="js/app.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    }, err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    </script>
+
+</body>
+</html>
