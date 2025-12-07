@@ -258,46 +258,61 @@ const App = {
 
     calculateWaveTarget(history, pivot) {
         let lastRealVol = null;
-        // Find last volume session
+        
+        // Find the last non-pivot volume session
         for(let i=history.length-1; i>=0; i--) {
             if(history[i].volActual && !history[i].pivot) { lastRealVol = history[i]; break; }
         }
 
+        // --- PIVOT LOGIC (Deload) ---
         if (pivot) {
-            let refWeight = lastRealVol ? lastRealVol.volActual : (this.state.currentLift==='squat'?365:225);
-            let targetWeight = this.roundTo5(refWeight * 0.85);
-            return { weight: targetWeight, reps: 3, note: "Pivot: Light Technical Work", isPause: true };
+             // If pivot is on, we take ~85% of your "normal" volume weight
+             let refWeight = lastRealVol ? lastRealVol.volActual : (this.state.currentLift==='squat'?365:225);
+             let targetWeight = this.roundTo5(refWeight * 0.85);
+             return {
+                 weight: targetWeight,
+                 reps: 3,
+                 note: "PIVOT: Speed/Tech work only. Do not grind.",
+                 isPause: true
+             };
         }
 
-        let targetWeight = (this.state.currentLift === 'squat') ? 365 : 225;
-        let targetReps = 4;
-        let note = "Wave Start";
+        // --- STANDARD "VENA" LOGIC ---
+        // Default Starting Weights if no history exists
+        let targetWeight = (this.state.currentLift === 'squat') ? 315 : 225;
+        let targetReps = 4; // STATIC REPS (Vena style: keep reps low/consistent)
+        let note = "Establish Baseline";
 
         if (lastRealVol) {
+            const lastWeight = lastRealVol.volActual;
+            // Default RPE to 7.5 if user didn't log it, to keep progression moving
+            const lastRpe = lastRealVol.volRpe || 7.5;
             const success = (lastRealVol.volFail === 'no');
-            const prevReps = lastRealVol.volReps || 4;
-            const prevWeight = lastRealVol.volActual;
 
-            if (success) {
-                if (prevReps === 4) {
-                    targetWeight = prevWeight;
-                    targetReps = 5;
-                    note = "Step Up: Add Volume (3x5)";
-                } else if (prevReps === 5) {
-                    targetWeight = prevWeight;
-                    targetReps = 6;
-                    note = "Step Up: Peak Volume (3x6)";
-                } else if (prevReps >= 6) {
-                    targetWeight = prevWeight + 5;
-                    targetReps = 4;
-                    note = "Wave Complete! +5lbs, Reset to 3x4";
-                }
+            if (!success) {
+                // Scenario: You physically failed a rep
+                targetWeight = this.roundTo5(lastWeight - 15);
+                note = "REGRESSION: Missed reps last time. Rebuild momentum.";
             } else {
-                targetWeight = prevWeight;
-                targetReps = prevReps;
-                note = "Missed Reps. Retry same weight/reps.";
+                // Scenario: You hit the reps, calculate load based on RPE
+                if (lastRpe <= 6) {
+                    targetWeight = lastWeight + 10;
+                    note = "EASY: +10lbs. (Last was RPE ≤ 6)";
+                } else if (lastRpe <= 7.5) {
+                    targetWeight = lastWeight + 5;
+                    note = "PROGRESS: +5lbs. (Last was RPE 6-7.5)";
+                } else if (lastRpe <= 8.5) {
+                    targetWeight = lastWeight;
+                    note = "CONSOLIDATE: Repeat weight. (Last was RPE 8+)";
+                } else {
+                    targetWeight = this.roundTo5(lastWeight - 10);
+                    note = "DELOAD: Last session was RPE 9+. Drop weight.";
+                }
             }
         }
+        
+        // Add the "Safety Valve" instruction for today
+        note += " [If Set 1 is > RPE 8, drop 5%]";
 
         return { weight: targetWeight, reps: targetReps, note, isPause: false };
     },
