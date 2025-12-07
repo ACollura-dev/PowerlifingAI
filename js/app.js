@@ -417,29 +417,30 @@ const App = {
         document.getElementById('step3').className = 'wave-step';
 
         // Determine step based on note
+        // LOGIC FIX: Visuals now reflect Weight Progression (Success = More Bars)
         let activeStep = 1;
         let completedSteps = [];
 
         if (note.includes('PIVOT:')) {
-            // Pivot mode: special visual (maybe all steps dimmed)
-            // For now, treat as step 1 but with a different class? We'll keep as step1 active but maybe add a class.
+            // Pivot mode: Low bars (Technical work)
             activeStep = 1;
             completedSteps = [];
-            // Add a class to indicate pivot? Not needed for now.
         } else if (note.includes('EASY:') || note.includes('PROGRESS:') || note.includes('Establish Baseline')) {
-            activeStep = 1; // Step Up
-            completedSteps = [];
+            // Success: Add Weight -> High Bars (Step 3)
+            activeStep = 3;
+            completedSteps = [1, 2];
         } else if (note.includes('CONSOLIDATE:')) {
-            activeStep = 2; // Consolidate
+            // Maintain: Medium Bars (Step 2)
+            activeStep = 2;
             completedSteps = [1];
         } else if (note.includes('REGRESSION:') || note.includes('DELOAD:')) {
-            activeStep = 3; // Step Down
-            completedSteps = [1, 2];
+            // Fail: Reduce Weight -> Low Bars (Step 1)
+            activeStep = 1;
+            completedSteps = [];
         } else {
-            // Fallback to reps logic (original)
-            if (reps >= 4) activeStep = 1;
-            if (reps >= 5) { activeStep = 2; completedSteps = [1]; }
-            if (reps >= 6) { activeStep = 3; completedSteps = [1, 2]; }
+            // Fallback
+            activeStep = 2;
+            completedSteps = [1];
         }
 
         // Apply active and completed classes
