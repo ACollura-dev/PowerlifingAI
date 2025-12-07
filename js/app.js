@@ -530,6 +530,7 @@ const App = {
     },
 
     clearHistory() {
+        console.log('clearHistory called for', this.state.currentUser, this.state.currentLift);
         if(confirm("Clear current lift data for " + this.state.currentUser + "?")) {
             // Only clear this lift type? v7.2 cleared key.
             // Here we have one big array. Filter out this lift type.

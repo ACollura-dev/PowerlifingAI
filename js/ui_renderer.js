@@ -77,6 +77,7 @@ const UI = {
     },
 
     bindEvents() {
+        console.log('UI.bindEvents called');
         // Range slider updates
         this.elements.sleepInput.addEventListener('input', (e) => {
             this.elements.sleepVal.textContent = e.target.value;
@@ -120,6 +121,7 @@ const UI = {
         this.elements.btnExport.addEventListener('click', () => Storage.exportData());
         this.elements.btnImportTrigger.addEventListener('click', () => this.elements.importFile.click());
         this.elements.importFile.addEventListener('change', (e) => Storage.importData(e.target));
+        console.log('btnClearHistory element:', this.elements.btnClearHistory);
         this.elements.btnClearHistory.addEventListener('click', () => App.clearHistory());
     },
 
