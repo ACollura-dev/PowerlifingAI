@@ -381,146 +381,152 @@ const App = {
     },
 
     calculateAndSave() {
-        const date = UI.elements.datePicker.value;
-        const h = this.getFilteredHistory();
-        let entry = {};
+        try {
+            console.log('calculateAndSave called');
+            const date = UI.elements.datePicker.value;
+            const h = this.getFilteredHistory();
+            let entry = {};
 
-        if (this.state.currentMode === 'heavy') {
-            const prevVol = parseFloat(UI.elements.prevVol.value || 0);
-            const heavySingle = parseFloat(UI.elements.heavySingle.value || 0);
-            const quality = UI.elements.heavyQuality.value;
-            const rpe = parseFloat(UI.elements.heavyRpe.value || 0);
-            const overshoot = document.getElementById('overshoot').value;
-            const backdownFail = document.getElementById('backdownFail').value;
-            
-            const nextVol = this.calculateWaveTarget(h, this.state.pivotActive);
-
-            // Logic Gate Checks
-            const sandbagCheck = LogicGates.checkSandbagging(rpe, backdownFail === 'no');
-            const fatigueCheck = LogicGates.checkFatigue({
-                type: `${this.state.currentMode}_${this.state.currentLift}`,
-                id: 'temp',
-                performance: { topSingle: heavySingle }
-            }, h);
-            
-            // Axial Load Check (Squat Only)
-            let axialCheck = { triggered: false };
-            if (this.state.currentLift === 'squat') {
-                const percentage = this.state.pivotActive ? 0.75 : 0.82;
-                const bdWeight = this.roundTo5(heavySingle * percentage);
+            if (this.state.currentMode === 'heavy') {
+                console.log('Heavy mode logging');
+                const prevVol = parseFloat(UI.elements.prevVol.value || 0);
+                const heavySingle = parseFloat(UI.elements.heavySingle.value || 0);
+                const quality = UI.elements.heavyQuality.value;
+                const rpe = parseFloat(UI.elements.heavyRpe.value || 0);
+                const overshoot = document.getElementById('overshoot').value;
+                const backdownFail = document.getElementById('backdownFail').value;
                 
-                // Est. Axial Load: Top Single (1 rep) + Backdowns (3 sets of 3 reps)
-                const currentAxialLoad = (heavySingle * 1) + (bdWeight * 3 * 3);
+                console.log('Inputs:', { prevVol, heavySingle, quality, rpe, overshoot, backdownFail });
                 
-                // Capacity hardcoded for now or based on user settings (e.g. 8000lbs)
-                const capacity = 9000;
+                const nextVol = this.calculateWaveTarget(h, this.state.pivotActive);
+                console.log('Next wave target:', nextVol);
+
+                // Logic Gate Checks
+                const sandbagCheck = LogicGates.checkSandbagging(rpe, backdownFail === 'no');
+                const fatigueCheck = LogicGates.checkFatigue({
+                    type: `${this.state.currentMode}_${this.state.currentLift}`,
+                    id: 'temp',
+                    performance: { topSingle: heavySingle }
+                }, h);
                 
-                axialCheck = LogicGates.checkAxialLoad({
-                    type: 'heavy_squat',
-                    performance: { axialLoad: currentAxialLoad, topRPE: rpe }
-                }, capacity);
-            }
+                // Axial Load Check (Squat Only)
+                let axialCheck = { triggered: false };
+                if (this.state.currentLift === 'squat') {
+                    const percentage = this.state.pivotActive ? 0.75 : 0.82;
+                    const bdWeight = this.roundTo5(heavySingle * percentage);
+                    
+                    // Est. Axial Load: Top Single (1 rep) + Backdowns (3 sets of 3 reps)
+                    const currentAxialLoad = (heavySingle * 1) + (bdWeight * 3 * 3);
+                    
+                    // Capacity hardcoded for now or based on user settings (e.g. 8000lbs)
+                    const capacity = 9000;
+                    
+                    axialCheck = LogicGates.checkAxialLoad({
+                        type: 'heavy_squat',
+                        performance: { axialLoad: currentAxialLoad, topRPE: rpe }
+                    }, capacity);
+                }
 
-            let activeFlags = [];
-            if (sandbagCheck.triggered) activeFlags.push(sandbagCheck.message);
-            if (fatigueCheck.triggered) activeFlags.push(fatigueCheck.message);
-            if (axialCheck.triggered) activeFlags.push(axialCheck.message);
+                let activeFlags = [];
+                if (sandbagCheck.triggered) activeFlags.push(sandbagCheck.message);
+                if (fatigueCheck.triggered) activeFlags.push(fatigueCheck.message);
+                if (axialCheck.triggered) activeFlags.push(axialCheck.message);
 
-            // Display Logic Gate Status if active
-            const methBox = document.getElementById('methodologyStatus');
-            if (activeFlags.length > 0) {
-                methBox.style.display = 'block';
-                methBox.innerHTML = `<strong>Active Methodology Adjustments:</strong><br>${activeFlags.join('<br>')}`;
+                // Display Logic Gate Status if active
+                const methBox = document.getElementById('methodologyStatus');
+                if (activeFlags.length > 0) {
+                    methBox.style.display = 'block';
+                    methBox.innerHTML = `<strong>Active Methodology Adjustments:</strong><br>${activeFlags.join('<br>')}`;
+                } else {
+                    methBox.style.display = 'none';
+                }
+                
+                // Generate UUID with fallback
+                let uuid;
+                try {
+                    uuid = crypto.randomUUID();
+                } catch (e) {
+                    console.warn('crypto.randomUUID failed, using fallback', e);
+                    uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                        const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                        return v.toString(16);
+                    });
+                }
+                
+                entry = {
+                    id: uuid,
+                    type: `${this.state.currentMode}_${this.state.currentLift}`, // e.g., heavy_squat
+                    date,
+                    prevVol,
+                    heavySingle,
+                    heavyQuality: quality,
+                    heavyRpe: rpe,
+                    overshoot,
+                    backdownFail,
+                    volTarget: nextVol.weight,
+                    pivot: this.state.pivotActive,
+                    // Placeholders for volume logic if mixed in future, but v7.2 separates them clearly
+                    volActual: null, volFail: 'no', volRpe: null, volReps: null,
+                    metrics: {
+                        sleep: parseInt(UI.elements.sleepInput.value),
+                        stress: parseInt(UI.elements.stressInput.value)
+                    },
+                    logicFlags: {
+                        sandbagging: sandbagCheck.triggered,
+                        fatigue: fatigueCheck.triggered
+                    }
+                };
+                
+                console.log('Saving entry:', entry);
+                Storage.addSession(this.state.currentUser, entry);
+                alert(`Logged for ${this.state.currentUser}! Next Wave Target: ${nextVol.weight} for 3x${nextVol.reps}`);
+
             } else {
-                methBox.style.display = 'none';
+                // Volume Mode
+                console.log('Volume mode logging');
+                if (h.length === 0) {
+                    alert("Log Heavy day first (per v7.2 logic).");
+                    return;
+                }
+                
+                const fullHistory = Storage.getHistory(this.state.currentUser);
+                let targetIndex = -1;
+                for (let i = fullHistory.length - 1; i >= 0; i--) {
+                    if (fullHistory[i].type && fullHistory[i].type.includes(this.state.currentLift)) {
+                        targetIndex = i;
+                        break;
+                    }
+                }
+                
+                if (targetIndex === -1) {
+                    alert("No previous Heavy session found to attach Volume to.");
+                    return;
+                }
+                
+                const last = fullHistory[targetIndex];
+                const pivot = last.pivot || this.state.pivotActive;
+                const calc = this.calculateWaveTarget(h, pivot);
+                
+                last.volActual = parseFloat(UI.elements.volActual.value || 0);
+                last.volRpe = parseFloat(UI.elements.volRpe.value || 0);
+                last.volFail = document.getElementById('volFail').value;
+                last.volReps = calc.reps;
+                
+                fullHistory[targetIndex] = last;
+                const key = `vena_history_${this.state.currentUser}`;
+                localStorage.setItem(key, JSON.stringify(fullHistory));
+                console.log('Updated volume entry:', last);
+                alert(`Wave Logged for ${this.state.currentUser}!`);
             }
             
-            entry = {
-                id: crypto.randomUUID(),
-                type: `${this.state.currentMode}_${this.state.currentLift}`, // e.g., heavy_squat
-                date,
-                prevVol,
-                heavySingle,
-                heavyQuality: quality,
-                heavyRpe: rpe,
-                overshoot,
-                backdownFail,
-                volTarget: nextVol.weight,
-                pivot: this.state.pivotActive,
-                // Placeholders for volume logic if mixed in future, but v7.2 separates them clearly
-                volActual: null, volFail: 'no', volRpe: null, volReps: null,
-                metrics: {
-                    sleep: parseInt(UI.elements.sleepInput.value),
-                    stress: parseInt(UI.elements.stressInput.value)
-                },
-                logicFlags: {
-                    sandbagging: sandbagCheck.triggered,
-                    fatigue: fatigueCheck.triggered
-                }
-            };
-            
-            Storage.addSession(this.state.currentUser, entry);
-            alert(`Logged for ${this.state.currentUser}! Next Wave Target: ${nextVol.weight} for 3x${nextVol.reps}`);
-
-        } else {
-            // Volume Mode
-            // In v7.2, volume was often logged onto the SAME entry if it was same day?
-            // "if(h.length === 0) return alert('Log Heavy day first.');" -> implies modifying last entry.
-            // Let's check v7.2 logic: "const last = h[h.length-1]; ... last.volActual = ... h[h.length-1] = last; saveHistory(h);"
-            // Yes, v7.2 modifies the LAST entry.
-            
-            if (h.length === 0) return alert("Log Heavy day first (per v7.2 logic).");
-            
-            // We need to update the LAST entry in Storage. 
-            // Storage module uses push. We need an update method or get reference.
-            // Since Storage.getHistory returns a copy (JSON.parse), modifying 'last' doesn't save it.
-            // We need a way to update.
-            // Let's manually get full history, modify, and save back using localStorage key manually or add method to Storage.
-            // I'll stick to manual manipulation here to ensure v7.2 behavior.
-            
-            const fullHistory = Storage.getHistory(this.state.currentUser);
-            // We need to find the index of the last entry that matches our filter.
-            // Since getFilteredHistory filters by type, let's find the last one with that type in fullHistory.
-            
-            let targetIndex = -1;
-            for (let i = fullHistory.length - 1; i >= 0; i--) {
-                if (fullHistory[i].type && fullHistory[i].type.includes(this.state.currentLift)) {
-                    targetIndex = i;
-                    break;
-                }
-            }
-            
-            if (targetIndex === -1) return alert("No previous Heavy session found to attach Volume to.");
-            
-            const last = fullHistory[targetIndex];
-            
-            // Determine Reps based on Wave Logic again to be sure
-            // Note: v7.2 used global 'currentWaveStep'. We need to recalculate it or store it.
-            // In setMode('vol'), we calculated it. Let's recalc.
-            const pivot = last.pivot || this.state.pivotActive; // Use session pivot or current
-            const calc = this.calculateWaveTarget(h, pivot); // Pass 'h' which is filtered history (excluding this update technically)
-            // Be careful: 'h' includes 'last' already. 
-            // Actually 'calculateWaveTarget' looks at history. If 'last' is the heavy day we just logged, it has no volActual yet.
-            // So it finds the PREVIOUS real volume.
-            
-            last.volActual = parseFloat(UI.elements.volActual.value || 0);
-            last.volRpe = parseFloat(UI.elements.volRpe.value || 0);
-            last.volFail = document.getElementById('volFail').value;
-            last.volReps = calc.reps; 
-            
-            fullHistory[targetIndex] = last;
-            
-            // Save back
-            const key = `vena_history_${this.state.currentUser}`;
-            localStorage.setItem(key, JSON.stringify(fullHistory));
-            
-            alert(`Wave Logged for ${this.state.currentUser}!`);
+            // Train AI
+            this.trainModel();
+            console.log('Session saved successfully, reloading');
+            location.reload();
+        } catch (error) {
+            console.error('Error in calculateAndSave:', error);
+            alert('Failed to log session. Check console for details.');
         }
-        
-        // Train AI
-        this.trainModel();
-        
-        location.reload();
     },
 
     clearHistory() {
