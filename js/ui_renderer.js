@@ -122,7 +122,13 @@ const UI = {
         this.elements.btnImportTrigger.addEventListener('click', () => this.elements.importFile.click());
         this.elements.importFile.addEventListener('change', (e) => Storage.importData(e.target));
         console.log('btnClearHistory element:', this.elements.btnClearHistory);
-        this.elements.btnClearHistory.addEventListener('click', () => App.clearHistory());
+        // Add both click and touchstart for mobile compatibility
+        const clearHistoryHandler = () => {
+            console.log('Reset Current User button triggered (click/touch)');
+            App.clearHistory();
+        };
+        this.elements.btnClearHistory.addEventListener('click', clearHistoryHandler);
+        this.elements.btnClearHistory.addEventListener('touchstart', clearHistoryHandler);
     },
 
     startVoiceInput() {
