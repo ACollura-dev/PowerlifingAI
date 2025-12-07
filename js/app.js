@@ -100,7 +100,8 @@ const App = {
             
             // Calculate Volume Target
             const res = this.calculateWaveTarget(this.getFilteredHistory(), this.state.pivotActive);
-            document.getElementById('volContextText').textContent = res.note;
+            const waveLabel = this.getWaveStepLabel(res.note);
+            document.getElementById('volContextText').textContent = waveLabel;
             UI.elements.volActual.value = res.weight;
             
             const instr = this.state.pivotActive ? 
@@ -109,7 +110,7 @@ const App = {
             document.getElementById('volInstruction').textContent = instr;
             
             // Visuals
-            this.updateWaveVisuals(res.reps);
+            this.updateWaveVisuals(res);
             
             document.getElementById('volTargetOut').textContent = res.weight + " lb";
             const tag = this.state.pivotActive ? "3x3 Tech" : `3x${res.reps}`;
@@ -378,21 +379,80 @@ const App = {
         }
     },
 
-    updateWaveVisuals(reps) {
+    getWaveStepLabel(note) {
+        // Map note to a descriptive label
+        if (note.includes('PIVOT:')) {
+            return 'Pivot: Technical Work';
+        }
+        if (note.includes('EASY:') || note.includes('PROGRESS:')) {
+            return 'Step Up: Add Volume';
+        }
+        if (note.includes('CONSOLIDATE:')) {
+            return 'Consolidate: Maintain Volume';
+        }
+        if (note.includes('REGRESSION:') || note.includes('DELOAD:')) {
+            return 'Step Down: Reduce Volume';
+        }
+        if (note.includes('Establish Baseline')) {
+            return 'Baseline: Establish Volume';
+        }
+        // Fallback
+        return note;
+    },
+
+    updateWaveVisuals(result) {
+        // result can be a number (reps) for backward compatibility, or an object with note and reps
+        let note = '';
+        let reps = 0;
+        if (typeof result === 'object' && result !== null) {
+            note = result.note || '';
+            reps = result.reps || 0;
+        } else {
+            reps = result;
+        }
+
+        // Reset all steps
         document.getElementById('step1').className = 'wave-step';
         document.getElementById('step2').className = 'wave-step';
         document.getElementById('step3').className = 'wave-step';
 
-        if (reps >= 4) document.getElementById('step1').classList.add('active');
-        if (reps >= 5) {
-            document.getElementById('step1').classList.add('completed');
-            document.getElementById('step2').classList.add('active');
+        // Determine step based on note
+        let activeStep = 1;
+        let completedSteps = [];
+
+        if (note.includes('PIVOT:')) {
+            // Pivot mode: special visual (maybe all steps dimmed)
+            // For now, treat as step 1 but with a different class? We'll keep as step1 active but maybe add a class.
+            activeStep = 1;
+            completedSteps = [];
+            // Add a class to indicate pivot? Not needed for now.
+        } else if (note.includes('EASY:') || note.includes('PROGRESS:') || note.includes('Establish Baseline')) {
+            activeStep = 1; // Step Up
+            completedSteps = [];
+        } else if (note.includes('CONSOLIDATE:')) {
+            activeStep = 2; // Consolidate
+            completedSteps = [1];
+        } else if (note.includes('REGRESSION:') || note.includes('DELOAD:')) {
+            activeStep = 3; // Step Down
+            completedSteps = [1, 2];
+        } else {
+            // Fallback to reps logic (original)
+            if (reps >= 4) activeStep = 1;
+            if (reps >= 5) { activeStep = 2; completedSteps = [1]; }
+            if (reps >= 6) { activeStep = 3; completedSteps = [1, 2]; }
         }
-        if (reps >= 6) {
-            document.getElementById('step1').classList.add('completed');
-            document.getElementById('step2').classList.add('completed');
-            document.getElementById('step3').classList.add('active');
-        }
+
+        // Apply active and completed classes
+        // Active step gets 'active' class
+        if (activeStep === 1) document.getElementById('step1').classList.add('active');
+        if (activeStep === 2) document.getElementById('step2').classList.add('active');
+        if (activeStep === 3) document.getElementById('step3').classList.add('active');
+        // Completed steps get 'completed' class
+        completedSteps.forEach(step => {
+            if (step === 1) document.getElementById('step1').classList.add('completed');
+            if (step === 2) document.getElementById('step2').classList.add('completed');
+            if (step === 3) document.getElementById('step3').classList.add('completed');
+        });
     },
 
     calculateAndSave() {
