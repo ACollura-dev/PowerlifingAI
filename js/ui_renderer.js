@@ -122,13 +122,33 @@ const UI = {
         this.elements.btnImportTrigger.addEventListener('click', () => this.elements.importFile.click());
         this.elements.importFile.addEventListener('change', (e) => Storage.importData(e.target));
         console.log('btnClearHistory element:', this.elements.btnClearHistory);
-        // Add both click and touchstart for mobile compatibility
+        // Enhanced mobile compatibility with visual feedback
         const clearHistoryHandler = () => {
             console.log('Reset Current User button triggered (click/touch)');
             App.clearHistory();
         };
-        this.elements.btnClearHistory.addEventListener('click', clearHistoryHandler);
-        this.elements.btnClearHistory.addEventListener('touchstart', clearHistoryHandler);
+        const button = this.elements.btnClearHistory;
+        if (button) {
+            // Click event for mouse
+            button.addEventListener('click', clearHistoryHandler);
+            // Touch events with visual feedback
+            button.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // prevent double-tap zoom
+                button.classList.add('btn-pressed');
+                console.log('Touch start on reset button');
+            });
+            button.addEventListener('touchend', (e) => {
+                button.classList.remove('btn-pressed');
+                clearHistoryHandler();
+            });
+            button.addEventListener('touchcancel', () => {
+                button.classList.remove('btn-pressed');
+            });
+            // Fallback inline onclick (in case event listeners fail)
+            button.onclick = clearHistoryHandler;
+        } else {
+            console.error('btnClearHistory element not found');
+        }
     },
 
     startVoiceInput() {

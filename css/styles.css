@@ -203,3 +203,10 @@ tbody tr:nth-child(even) { background: #0f172a; }
 .heatmap-cell.completed {
   background-color: #38bdf8;
 }
+
+/* Mobile button feedback */
+.btn-pressed {
+  background-color: #1d4ed8 !important;
+  transform: scale(0.98);
+  transition: transform 0.1s, background-color 0.1s;
+}

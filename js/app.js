@@ -531,31 +531,34 @@ const App = {
 
     clearHistory() {
         console.log('clearHistory called for', this.state.currentUser, this.state.currentLift);
-        if(confirm("Clear current lift data for " + this.state.currentUser + "?")) {
-            try {
-                // Only clear this lift type? v7.2 cleared key.
-                // Here we have one big array. Filter out this lift type.
-                const fullHistory = Storage.getHistory(this.state.currentUser);
-                console.log('Full history length:', fullHistory.length);
-                const newHistory = fullHistory.filter(h => {
-                    if (!h.type) {
-                        console.warn('Entry missing type property:', h);
-                        return true; // Keep entries without type? Or treat as not matching? We'll assume they belong to other lifts.
-                    }
-                    const includes = h.type.includes(this.state.currentLift);
-                    console.log(`Entry type: ${h.type}, includes ${this.state.currentLift}? ${includes}`);
-                    return !includes;
-                });
-                console.log('Filtered history length:', newHistory.length);
-                const key = `vena_history_${this.state.currentUser}`;
-                localStorage.setItem(key, JSON.stringify(newHistory));
-                console.log('History cleared successfully');
-                location.reload();
-            } catch (error) {
-                console.error('Error in clearHistory:', error);
-                alert('Failed to clear history. Check console for details.');
+        // Use setTimeout to ensure confirm dialog is not blocked by touch event on mobile
+        setTimeout(() => {
+            if(confirm("Clear current lift data for " + this.state.currentUser + "?")) {
+                try {
+                    // Only clear this lift type? v7.2 cleared key.
+                    // Here we have one big array. Filter out this lift type.
+                    const fullHistory = Storage.getHistory(this.state.currentUser);
+                    console.log('Full history length:', fullHistory.length);
+                    const newHistory = fullHistory.filter(h => {
+                        if (!h.type) {
+                            console.warn('Entry missing type property:', h);
+                            return true; // Keep entries without type? Or treat as not matching? We'll assume they belong to other lifts.
+                        }
+                        const includes = h.type.includes(this.state.currentLift);
+                        console.log(`Entry type: ${h.type}, includes ${this.state.currentLift}? ${includes}`);
+                        return !includes;
+                    });
+                    console.log('Filtered history length:', newHistory.length);
+                    const key = `vena_history_${this.state.currentUser}`;
+                    localStorage.setItem(key, JSON.stringify(newHistory));
+                    console.log('History cleared successfully');
+                    location.reload();
+                } catch (error) {
+                    console.error('Error in clearHistory:', error);
+                    alert('Failed to clear history. Check console for details.');
+                }
             }
-        }
+        }, 0);
     },
     
     renderHistory() {
