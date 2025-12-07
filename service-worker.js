@@ -1,6 +1,6 @@
 const CACHE_NAME = 'vena-ai-v1';
 const ASSETS_TO_CACHE = [
-  './planner_v8.html',
+  './index.html',
   './manifest.json',
   './css/styles.css',
   './js/app.js',

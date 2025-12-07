@@ -1,7 +1,7 @@
 {
   "name": "Vena-AI Powerlifting Planner",
   "short_name": "Vena-AI",
-  "start_url": "planner_v8.html",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#121212",
   "theme_color": "#BB86FC",
