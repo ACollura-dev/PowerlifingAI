@@ -385,16 +385,16 @@ const App = {
             return 'Pivot: Technical Work';
         }
         if (note.includes('EASY:') || note.includes('PROGRESS:')) {
-            return 'Step Up: Add Volume';
+            return 'Step Up: Increase Weight';
         }
         if (note.includes('CONSOLIDATE:')) {
-            return 'Consolidate: Maintain Volume';
+            return 'Consolidate: Maintain Weight';
         }
         if (note.includes('REGRESSION:') || note.includes('DELOAD:')) {
-            return 'Step Down: Reduce Volume';
+            return 'Step Down: Reduce Weight';
         }
         if (note.includes('Establish Baseline')) {
-            return 'Baseline: Establish Volume';
+            return 'Baseline: Establish Weight';
         }
         // Fallback
         return note;
