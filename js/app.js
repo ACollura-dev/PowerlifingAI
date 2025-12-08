@@ -10,7 +10,8 @@ const App = {
         currentLift: 'squat', // 'squat' or 'bench'
         currentMode: 'heavy', // 'heavy' or 'vol'
         pivotActive: false,
-        currentDate: new Date().toISOString().split('T')[0]
+        currentDate: new Date().toISOString().split('T')[0],
+        editingId: null
     },
 
     async init() {
@@ -652,12 +653,87 @@ const App = {
                 <td>${pivotMarker}${e.heavySingle}</td>
                 <td>${waveDisplay} ${waveStatus}</td>
                 <td>${e.volActual || '-'}</td>
+                <td class="actions">
+                    <button class="btn-edit" onclick="App.openEditModal('${e.id}')">✏️</button>
+                    <button class="btn-delete" onclick="App.deleteSession('${e.id}')">🗑️</button>
+                </td>
             </tr>`;
             tbody.innerHTML += row;
         });
 
         UI.renderChart(h, this.state.currentLift);
         UI.renderHeatmap(h);
+    },
+
+    // ==========================================
+    // Edit/Delete Functionality
+    // ==========================================
+
+    openEditModal(id) {
+        const fullHistory = Storage.getHistory(this.state.currentUser);
+        const session = fullHistory.find(s => s.id === id);
+        if (!session) return;
+        this.state.editingId = id;
+
+        // Populate modal fields (assuming modal IDs match v7)
+        document.getElementById('editDate').value = session.date || '';
+        document.getElementById('editHeavySingle').value = session.heavySingle || '';
+        document.getElementById('editHeavyQuality').value = session.heavyQuality || 'avg';
+        document.getElementById('editHeavyRpe').value = session.heavyRpe || '';
+        document.getElementById('editOvershoot').value = session.overshoot || 'no';
+        document.getElementById('editBackdownFail').value = session.backdownFail || 'no';
+        document.getElementById('editPivot').value = session.pivot ? 'true' : 'false';
+        document.getElementById('editVolActual').value = session.volActual || '';
+        document.getElementById('editVolRpe').value = session.volRpe || '';
+        document.getElementById('editVolFail').value = session.volFail || 'no';
+
+        // Show modal
+        document.getElementById('editModal').style.display = 'flex';
+    },
+
+    closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+        this.state.editingId = null;
+    },
+
+    saveEdit() {
+        if (!this.state.editingId) return;
+        const fullHistory = Storage.getHistory(this.state.currentUser);
+        const sessionIndex = fullHistory.findIndex(s => s.id === this.state.editingId);
+        if (sessionIndex === -1) return;
+        const session = fullHistory[sessionIndex];
+
+        // Update session with form values
+        session.date = document.getElementById('editDate').value;
+        session.heavySingle = parseFloat(document.getElementById('editHeavySingle').value) || null;
+        session.heavyQuality = document.getElementById('editHeavyQuality').value;
+        session.heavyRpe = parseFloat(document.getElementById('editHeavyRpe').value) || null;
+        session.overshoot = document.getElementById('editOvershoot').value;
+        session.backdownFail = document.getElementById('editBackdownFail').value;
+        session.pivot = document.getElementById('editPivot').value === 'true';
+        session.volActual = parseFloat(document.getElementById('editVolActual').value) || null;
+        session.volRpe = parseFloat(document.getElementById('editVolRpe').value) || null;
+        session.volFail = document.getElementById('editVolFail').value;
+
+        // Save back to storage
+        fullHistory[sessionIndex] = session;
+        const key = `vena_history_${this.state.currentUser}`;
+        localStorage.setItem(key, JSON.stringify(fullHistory));
+        this.closeEditModal();
+        this.refreshView();
+        alert('Session updated.');
+    },
+
+    deleteSession(id) {
+        if (!confirm('Delete this session? This cannot be undone.')) return;
+        const fullHistory = Storage.getHistory(this.state.currentUser);
+        const sessionIndex = fullHistory.findIndex(s => s.id === id);
+        if (sessionIndex === -1) return;
+        fullHistory.splice(sessionIndex, 1);
+        const key = `vena_history_${this.state.currentUser}`;
+        localStorage.setItem(key, JSON.stringify(fullHistory));
+        this.refreshView();
+        alert('Session deleted.');
     },
 
     // ==========================================
