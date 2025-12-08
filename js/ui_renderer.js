@@ -149,6 +149,38 @@ const UI = {
         } else {
             console.error('btnClearHistory element not found');
         }
+
+        // Enhanced mobile compatibility for delete buttons (dynamic)
+        const historyTable = document.getElementById('historyTable');
+        if (historyTable) {
+            // Touch feedback for delete buttons
+            historyTable.addEventListener('touchstart', (e) => {
+                const deleteBtn = e.target.closest('.btn-delete');
+                if (deleteBtn) {
+                    e.preventDefault(); // prevent double-tap zoom
+                    deleteBtn.classList.add('btn-pressed');
+                    console.log('Touch start on delete button', deleteBtn);
+                }
+            });
+            historyTable.addEventListener('touchend', (e) => {
+                const deleteBtn = e.target.closest('.btn-delete');
+                if (deleteBtn) {
+                    deleteBtn.classList.remove('btn-pressed');
+                    // Trigger the button's click event (which will call App.deleteSession via onclick)
+                    deleteBtn.click();
+                    console.log('Touch end on delete button, triggering click');
+                }
+            });
+            historyTable.addEventListener('touchcancel', (e) => {
+                const deleteBtn = e.target.closest('.btn-delete');
+                if (deleteBtn) {
+                    deleteBtn.classList.remove('btn-pressed');
+                }
+            });
+            console.log('Delete button touch events attached');
+        } else {
+            console.warn('historyTable not found, delete button touch events skipped');
+        }
     },
 
     startVoiceInput() {
