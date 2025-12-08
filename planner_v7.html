@@ -254,7 +254,7 @@
       <div id="graphContainer"></div>
       <div style="overflow-x:auto; max-height:200px; margin-top:1rem;">
           <table id="historyTable">
-            <thead><tr><th>Date</th><th>Single</th><th>Wave</th><th>Weight</th></tr></thead>
+            <thead><tr><th>Date</th><th>Single</th><th>Wave</th><th>Weight</th><th>Actions</th></tr></thead>
             <tbody></tbody>
           </table>
       </div>
@@ -689,15 +689,20 @@
         const h = getHistory();
         const tbody = document.querySelector('#historyTable tbody');
         tbody.innerHTML = "";
-        [...h].reverse().forEach(e => {
+        [...h].reverse().forEach((e, i) => {
             const waveDisplay = e.volReps ? `3x${e.volReps}` : '-';
             const waveStatus = e.volFail === 'yes' ? '❌' : '✅';
             const pivotMarker = e.pivot ? '<span style="color:#fca5a5">[PIVOT]</span> ' : '';
+            const originalIndex = h.length - 1 - i;
             const row = `<tr>
                 <td>${e.date}</td>
                 <td>${pivotMarker}${e.heavySingle}</td>
                 <td>${waveDisplay} ${waveStatus}</td>
                 <td>${e.volActual || '-'}</td>
+                <td class="actions">
+                    <button class="btn-edit" onclick="openEditModal(${originalIndex})">✏️</button>
+                    <button class="btn-delete" onclick="deleteSession(${originalIndex})">🗑️</button>
+                </td>
             </tr>`;
             tbody.innerHTML += row;
         });
@@ -724,6 +729,102 @@
         const stroke = currentLift === 'squat' ? '#38bdf8' : '#f472b6';
         container.innerHTML = `<svg width="100%" height="100%"><polyline points="${pts}" fill="none" stroke="${stroke}" stroke-width="3"/></svg>`;
     }
+
+    // Edit/Delete functionality
+    let editingIndex = -1;
+
+    function openEditModal(index) {
+        const h = getHistory();
+        if (index < 0 || index >= h.length) return;
+        const session = h[index];
+        editingIndex = index;
+
+        // Populate form fields
+        document.getElementById('editDate').value = session.date || '';
+        document.getElementById('editHeavySingle').value = session.heavySingle || '';
+        document.getElementById('editHeavyQuality').value = session.heavyQuality || 'avg';
+        document.getElementById('editHeavyRpe').value = session.heavyRpe || '';
+        document.getElementById('editOvershoot').value = session.overshoot || 'no';
+        document.getElementById('editBackdownFail').value = session.backdownFail || 'no';
+        document.getElementById('editPivot').value = session.pivot ? 'true' : 'false';
+        document.getElementById('editVolActual').value = session.volActual || '';
+        document.getElementById('editVolRpe').value = session.volRpe || '';
+        document.getElementById('editVolFail').value = session.volFail || 'no';
+
+        // Show modal
+        document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+        editingIndex = -1;
+    }
+
+    function saveEdit() {
+        if (editingIndex === -1) return;
+        const h = getHistory();
+        const session = h[editingIndex];
+
+        // Update session with form values
+        session.date = document.getElementById('editDate').value;
+        session.heavySingle = parseFloat(document.getElementById('editHeavySingle').value) || null;
+        session.heavyQuality = document.getElementById('editHeavyQuality').value;
+        session.heavyRpe = parseFloat(document.getElementById('editHeavyRpe').value) || null;
+        session.overshoot = document.getElementById('editOvershoot').value;
+        session.backdownFail = document.getElementById('editBackdownFail').value;
+        session.pivot = document.getElementById('editPivot').value === 'true';
+        session.volActual = parseFloat(document.getElementById('editVolActual').value) || null;
+        session.volRpe = parseFloat(document.getElementById('editVolRpe').value) || null;
+        session.volFail = document.getElementById('editVolFail').value;
+
+        // Save back to localStorage
+        saveHistory(h);
+        closeEditModal();
+        renderHistory();
+        drawGraph(h);
+        runSystemAutopilot(); // update system status
+        alert('Session updated.');
+    }
+
+    function deleteSession(index) {
+        if (!confirm('Delete this session? This cannot be undone.')) return;
+        const h = getHistory();
+        if (index < 0 || index >= h.length) return;
+        h.splice(index, 1);
+        saveHistory(h);
+        renderHistory();
+        drawGraph(h);
+        runSystemAutopilot();
+        alert('Session deleted.');
+    }
+
+    // Attach form submit handler
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('editForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveEdit();
+            });
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeEditModal();
+            }
+        });
+
+        // Close modal on backdrop click
+        const modal = document.getElementById('editModal');
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeEditModal();
+                }
+            });
+        }
+    });
 
     function exportData() {
         let combined = {};
@@ -779,5 +880,65 @@
         }
     }
 </script>
+
+<!-- Edit Session Modal -->
+<div id="editModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h3>Edit Session</h3>
+    <form id="editForm">
+      <label for="editDate">Date</label>
+      <input type="date" id="editDate" required>
+      
+      <label for="editHeavySingle">Heavy Single (lb)</label>
+      <input type="number" id="editHeavySingle" step="5" placeholder="e.g. 475">
+      
+      <label for="editHeavyQuality">Quality</label>
+      <select id="editHeavyQuality">
+        <option value="good">Clean (RPE ≤8)</option>
+        <option value="avg" selected>Okay</option>
+        <option value="bad">Grindy (RPE 9+)</option>
+      </select>
+      
+      <label for="editHeavyRpe">RPE</label>
+      <input type="number" id="editHeavyRpe" step="0.5" placeholder="8.0">
+      
+      <label for="editOvershoot">Overshot Target?</label>
+      <select id="editOvershoot">
+        <option value="no" selected>No</option>
+        <option value="yes">Yes (Force Hold)</option>
+      </select>
+      
+      <label for="editBackdownFail">Failed Backdowns?</label>
+      <select id="editBackdownFail">
+        <option value="no" selected>No</option>
+        <option value="yes">Yes (Regression)</option>
+      </select>
+      
+      <label for="editPivot">Pivot Mode</label>
+      <select id="editPivot">
+        <option value="false">No</option>
+        <option value="true">Yes</option>
+      </select>
+      
+      <label for="editVolActual">Volume Actual (lb)</label>
+      <input type="number" id="editVolActual" step="5" placeholder="e.g. 365">
+      
+      <label for="editVolRpe">Volume RPE</label>
+      <input type="number" id="editVolRpe" step="0.5" placeholder="e.g. 7.0">
+      
+      <label for="editVolFail">Volume Success?</label>
+      <select id="editVolFail">
+        <option value="no" selected>Yes, hit all reps.</option>
+        <option value="yes">No, missed reps.</option>
+      </select>
+      
+      <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+        <button type="button" class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+        <button type="submit" class="btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 </body>
 </html>

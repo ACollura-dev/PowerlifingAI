@@ -210,3 +210,78 @@ tbody tr:nth-child(even) { background: #0f172a; }
   transform: scale(0.98);
   transition: transform 0.1s, background-color 0.1s;
 }
+
+/* Actions column buttons */
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+.btn-edit, .btn-delete {
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: bold;
+  transition: opacity 0.2s;
+}
+.btn-edit {
+  background-color: #38bdf8;
+  color: #0f172a;
+}
+.btn-delete {
+  background-color: #ef4444;
+  color: white;
+}
+.btn-edit:hover, .btn-delete:hover {
+  opacity: 0.8;
+}
+
+/* Modal */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  align-items: center;
+  justify-content: center;
+}
+.modal-content {
+  background: #1e293b;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 500px;
+  border: 1px solid #334155;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+.modal-content h3 {
+  margin-top: 0;
+  color: #38bdf8;
+  font-size: 1.2rem;
+}
+.modal-content label {
+  display: block;
+  margin-top: 0.5rem;
+}
+.modal-content input, .modal-content select {
+  margin-bottom: 0.5rem;
+}
+.modal-content .btn-primary {
+  background: #38bdf8;
+  color: #0f172a;
+  font-weight: bold;
+  padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+}
+.modal-content .btn-secondary {
+  background: #334155;
+  color: #e2e8f0;
+}
