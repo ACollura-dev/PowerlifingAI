@@ -40,9 +40,21 @@ const LogicGates = {
         const last1 = prevSessions[0];
         const last2 = prevSessions[1];
         
-        const currentTop = currentSession.performance.topSingle;
-        const last1Top = last1.performance.topSingle;
-        const last2Top = last2.performance.topSingle;
+        // Helper to extract top single from session (supports both old and new structures)
+        const getTopSingle = (session) => {
+            if (session.performance && session.performance.topSingle !== undefined) {
+                return session.performance.topSingle;
+            }
+            if (session.heavySingle !== undefined) {
+                return session.heavySingle;
+            }
+            // fallback (should not happen for heavy sessions)
+            return 0;
+        };
+
+        const currentTop = getTopSingle(currentSession);
+        const last1Top = getTopSingle(last1);
+        const last2Top = getTopSingle(last2);
 
         // Trigger: If TopSingle < Previous for 2 consecutive sessions (Current < Last1 < Last2)
         // Or strictly: Current < Last1 AND Last1 < Last2
@@ -104,7 +116,8 @@ const LogicGates = {
         const lastSession = history[history.length - 1];
         if (!lastSession) return adjustments;
 
-        if (lastSession.logicFlags.fatigueTriggered) {
+        // Use optional chaining and correct property names
+        if (lastSession.logicFlags?.fatigue) {
              adjustments.message = "Pivot Block Active: Deload Requested.";
              adjustments.loadModifier = 0.85;
              adjustments.variation = "pivot";
@@ -114,7 +127,7 @@ const LogicGates = {
         if (lastSession.dayOfWeek === 2 && dayOfWeek === 6) { // Tuesday -> Saturday
             // Check Axial load flag from Tuesday
             // In a real DB we'd query by date, here we just look at the last session if it was Tuesday
-            if (lastSession.type === 'heavy_squat' && lastSession.logicFlags.axialLoadHigh) {
+            if (lastSession.type === 'heavy_squat' && lastSession.logicFlags?.axialLoadHigh) {
                 adjustments.message = "High Axial Fatigue from Tuesday. Reducing load.";
                 adjustments.loadModifier = 0.95;
                 adjustments.variation = "pause_squat";

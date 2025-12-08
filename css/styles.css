@@ -285,3 +285,15 @@ tbody tr:nth-child(even) { background: #0f172a; }
   background: #334155;
   color: #e2e8f0;
 }
+
+/* Inline editing */
+.inline-edit {
+    width: 100%;
+    padding: 0.25rem;
+    border: 1px solid #38bdf8;
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    box-sizing: border-box;
+}

@@ -11,7 +11,8 @@ const App = {
         currentMode: 'heavy', // 'heavy' or 'vol'
         pivotActive: false,
         currentDate: new Date().toISOString().split('T')[0],
-        editingId: null
+        editingId: null,
+        editingUser: null
     },
 
     async init() {
@@ -649,10 +650,10 @@ const App = {
             const pivotMarker = e.pivot ? '<span style="color:#fca5a5">[PIVOT]</span> ' : '';
             
             const row = `<tr>
-                <td>${e.date}</td>
-                <td>${pivotMarker}${e.heavySingle}</td>
+                <td ondblclick="App.editCell(this, '${e.id}', 'date')">${e.date}</td>
+                <td ondblclick="App.editCell(this, '${e.id}', 'heavySingle')">${pivotMarker}${e.heavySingle}</td>
                 <td>${waveDisplay} ${waveStatus}</td>
-                <td>${e.volActual || '-'}</td>
+                <td ondblclick="App.editCell(this, '${e.id}', 'volActual')">${e.volActual || '-'}</td>
                 <td class="actions">
                     <button class="btn-edit" onclick="App.openEditModal('${e.id}')">✏️</button>
                     <button class="btn-delete" onclick="App.deleteSession('${e.id}')">🗑️</button>
@@ -674,6 +675,7 @@ const App = {
         const session = fullHistory.find(s => s.id === id);
         if (!session) return;
         this.state.editingId = id;
+        this.state.editingUser = this.state.currentUser;
 
         // Populate modal fields (assuming modal IDs match v7)
         document.getElementById('editDate').value = session.date || '';
@@ -683,6 +685,10 @@ const App = {
         document.getElementById('editOvershoot').value = session.overshoot || 'no';
         document.getElementById('editBackdownFail').value = session.backdownFail || 'no';
         document.getElementById('editPivot').value = session.pivot ? 'true' : 'false';
+        document.getElementById('editPrevVol').value = session.prevVol || '';
+        document.getElementById('editVolTarget').value = session.volTarget || '';
+        document.getElementById('editSleep').value = session.metrics?.sleep || '';
+        document.getElementById('editStress').value = session.metrics?.stress || '';
         document.getElementById('editVolActual').value = session.volActual || '';
         document.getElementById('editVolRpe').value = session.volRpe || '';
         document.getElementById('editVolFail').value = session.volFail || 'no';
@@ -694,11 +700,12 @@ const App = {
     closeEditModal() {
         document.getElementById('editModal').style.display = 'none';
         this.state.editingId = null;
+        this.state.editingUser = null;
     },
 
     saveEdit() {
-        if (!this.state.editingId) return;
-        const fullHistory = Storage.getHistory(this.state.currentUser);
+        if (!this.state.editingId || !this.state.editingUser) return;
+        const fullHistory = Storage.getHistory(this.state.editingUser);
         const sessionIndex = fullHistory.findIndex(s => s.id === this.state.editingId);
         if (sessionIndex === -1) return;
         const session = fullHistory[sessionIndex];
@@ -711,13 +718,19 @@ const App = {
         session.overshoot = document.getElementById('editOvershoot').value;
         session.backdownFail = document.getElementById('editBackdownFail').value;
         session.pivot = document.getElementById('editPivot').value === 'true';
+        session.prevVol = parseFloat(document.getElementById('editPrevVol').value) || null;
+        session.volTarget = parseFloat(document.getElementById('editVolTarget').value) || null;
         session.volActual = parseFloat(document.getElementById('editVolActual').value) || null;
         session.volRpe = parseFloat(document.getElementById('editVolRpe').value) || null;
         session.volFail = document.getElementById('editVolFail').value;
+        // Ensure metrics object exists
+        if (!session.metrics) session.metrics = {};
+        session.metrics.sleep = parseInt(document.getElementById('editSleep').value) || null;
+        session.metrics.stress = parseInt(document.getElementById('editStress').value) || null;
 
         // Save back to storage
         fullHistory[sessionIndex] = session;
-        const key = `vena_history_${this.state.currentUser}`;
+        const key = `vena_history_${this.state.editingUser}`;
         localStorage.setItem(key, JSON.stringify(fullHistory));
         this.closeEditModal();
         this.refreshView();
@@ -734,6 +747,100 @@ const App = {
         localStorage.setItem(key, JSON.stringify(fullHistory));
         this.refreshView();
         alert('Session deleted.');
+    },
+
+    // ==========================================
+    // Inline Editing
+    // ==========================================
+
+    editCell(cell, id, field) {
+        // Get current value from cell text (strip HTML)
+        let currentValue = cell.textContent.trim();
+        // If field is heavySingle, need to extract numeric value (remove pivot marker)
+        if (field === 'heavySingle') {
+            // Remove any non-numeric characters except digits and decimal
+            const match = currentValue.match(/(\d+(\.\d+)?)/);
+            if (match) currentValue = match[0];
+        }
+        // Determine input type based on field
+        let inputType = 'text';
+        if (field === 'date') inputType = 'date';
+        if (field === 'heavySingle' || field === 'volActual') inputType = 'number';
+
+        // Create input element
+        const input = document.createElement('input');
+        input.type = inputType;
+        input.value = currentValue;
+        input.className = 'inline-edit';
+        if (inputType === 'number') {
+            input.step = '5';
+            input.min = '0';
+        }
+
+        // Replace cell content with input
+        cell.innerHTML = '';
+        cell.appendChild(input);
+        input.focus();
+        input.select();
+
+        // Save on blur or Enter
+        const save = () => {
+            const newValue = input.value.trim();
+            this.saveInlineEdit(id, field, newValue, cell);
+        };
+        input.addEventListener('blur', save);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') save();
+            if (e.key === 'Escape') {
+                // Cancel editing and revert
+                this.cancelInlineEdit(cell, currentValue);
+            }
+        });
+    },
+
+    saveInlineEdit(id, field, newValue, cell) {
+        const fullHistory = Storage.getHistory(this.state.currentUser);
+        const sessionIndex = fullHistory.findIndex(s => s.id === id);
+        if (sessionIndex === -1) return;
+        const session = fullHistory[sessionIndex];
+
+        // Convert value based on field type
+        let parsedValue = newValue;
+        if (field === 'date') {
+            // Validate date format? Assume YYYY-MM-DD
+            parsedValue = newValue;
+        } else if (field === 'heavySingle' || field === 'volActual') {
+            parsedValue = newValue === '' ? null : parseFloat(newValue);
+            if (isNaN(parsedValue)) parsedValue = null;
+        }
+
+        // Update session
+        session[field] = parsedValue;
+
+        // Save back
+        fullHistory[sessionIndex] = session;
+        const key = `vena_history_${this.state.currentUser}`;
+        localStorage.setItem(key, JSON.stringify(fullHistory));
+
+        // Update cell display
+        this.updateCellDisplay(cell, field, parsedValue, session);
+    },
+
+    cancelInlineEdit(cell, originalValue) {
+        cell.textContent = originalValue;
+    },
+
+    updateCellDisplay(cell, field, value, session) {
+        if (field === 'date') {
+            cell.textContent = value;
+        } else if (field === 'heavySingle') {
+            const pivotMarker = session.pivot ? '<span style="color:#fca5a5">[PIVOT]</span> ' : '';
+            cell.innerHTML = pivotMarker + (value || '');
+        } else if (field === 'volActual') {
+            cell.textContent = value || '-';
+        }
+        // Reattach double-click event
+        cell.setAttribute('ondblclick', `App.editCell(this, '${session.id}', '${field}')`);
     },
 
     // ==========================================

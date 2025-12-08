@@ -49,13 +49,15 @@ const AIModel = {
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
 
             // Only train on heavy sessions to keep it relevant to max effort
-            if (current.type.includes('heavy') && current.performance.topSingle > 0) {
+            if (current.type.includes('heavy') && current.heavySingle > 0) {
                 // Normalize inputs roughly to 0-1 range for better convergence
                 // Sleep: 1-5 -> 0.2-1.0
                 // Stress: 1-5 -> 0.2-1.0
                 // Days: 1-14 -> 0.07-1.0 (capped)
                 
-                const normSleep = current.metrics.sleepQuality / 5;
+                const sleepValue = current.metrics?.sleep || 3;
+                const stressValue = current.metrics?.stress || 3;
+                const normSleep = sleepValue / 5;
                 // FIX: Invert Stress for AI training so higher value = better condition (like sleep)
                 // If Stress is 1 (Good), we want 0.8 or 1.0?
                 // Let's standardise: Higher Input = Higher Performance.
@@ -63,16 +65,16 @@ const AIModel = {
                 // Stress: 1 is Good -> Should be mapped to 1.0.
                 // Stress: 5 is Bad -> Should be mapped to 0.2.
                 // Formula: (6 - Stress) / 5.
-                const normStress = (6 - current.metrics.stressLevel) / 5;
+                const normStress = (6 - stressValue) / 5;
                 
                 const normDays = Math.min(diffDays, 14) / 14;
 
                 xs.push([normSleep, normStress, normDays]);
                 
-                // Target: We want to predict the load relative to some baseline, 
-                // but for this simple version, let's try to predict the raw weight directly 
+                // Target: We want to predict the load relative to some baseline,
+                // but for this simple version, let's try to predict the raw weight directly
                 // scaled down by 1000 to keep gradients controlled.
-                ys.push([current.performance.topSingle / 1000]);
+                ys.push([current.heavySingle / 1000]);
             }
         }
 
