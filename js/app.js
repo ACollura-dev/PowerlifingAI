@@ -738,15 +738,19 @@ const App = {
     },
 
     deleteSession(id) {
-        if (!confirm('Delete this session? This cannot be undone.')) return;
-        const fullHistory = Storage.getHistory(this.state.currentUser);
-        const sessionIndex = fullHistory.findIndex(s => s.id === id);
-        if (sessionIndex === -1) return;
-        fullHistory.splice(sessionIndex, 1);
-        const key = `vena_history_${this.state.currentUser}`;
-        localStorage.setItem(key, JSON.stringify(fullHistory));
-        this.refreshView();
-        alert('Session deleted.');
+        console.log('deleteSession called for', id);
+        // Use setTimeout to ensure confirm dialog is not blocked by touch event on mobile
+        setTimeout(() => {
+            if (!confirm('Delete this session? This cannot be undone.')) return;
+            const fullHistory = Storage.getHistory(this.state.currentUser);
+            const sessionIndex = fullHistory.findIndex(s => s.id === id);
+            if (sessionIndex === -1) return;
+            fullHistory.splice(sessionIndex, 1);
+            const key = `vena_history_${this.state.currentUser}`;
+            localStorage.setItem(key, JSON.stringify(fullHistory));
+            this.refreshView();
+            alert('Session deleted.');
+        }, 0);
     },
 
     // ==========================================
