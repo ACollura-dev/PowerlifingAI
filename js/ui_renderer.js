@@ -20,7 +20,7 @@ const UI = {
 
         // Core Inputs
         datePicker: document.getElementById('date'),
-        
+
         // AI Readiness
         sleepInput: document.getElementById('sleep-score'),
         sleepVal: document.getElementById('sleep-val'),
@@ -45,7 +45,7 @@ const UI = {
         warmupPreviewHeavy: document.getElementById('warmupPreviewHeavy'),
         plateLoadingBox: document.getElementById('plateLoadingBox'),
         heavySuggestionBox: document.getElementById('heavySuggestionBox'),
-        
+
         // Volume Inputs
         volActual: document.getElementById('volActual'),
         volRpe: document.getElementById('volRpe'),
@@ -62,13 +62,13 @@ const UI = {
         // Charts
         chartCanvas: document.getElementById('progress-chart'),
         heatmapContainer: document.getElementById('heatmap-container'),
-        
+
         // Protocol
         pivotMode: document.getElementById('pivotMode'),
         protocolBanner: document.getElementById('protocolBanner'),
         systemStatus: document.getElementById('systemStatus')
     },
-    
+
     chartInstance: null,
 
     init() {
@@ -110,13 +110,13 @@ const UI = {
         // Live Calculations (Plate Loading / Warmups)
         this.elements.heavySingle.addEventListener('input', () => App.liveUpdateHeavy());
         this.elements.volActual.addEventListener('input', () => App.previewVolWarmup());
-        
+
         // Log Session
         this.elements.btnLogSession.addEventListener('click', () => App.calculateAndSave());
 
         // Voice Command
         this.elements.voiceBtn.addEventListener('click', () => this.startVoiceInput());
-        
+
         // Data Management
         this.elements.btnExport.addEventListener('click', () => Storage.exportData());
         this.elements.btnImportTrigger.addEventListener('click', () => this.elements.importFile.click());
@@ -185,7 +185,9 @@ const UI = {
 
     startVoiceInput() {
         if (!('webkitSpeechRecognition' in window)) {
-            alert("Speech recognition not supported in this browser.");
+            if (typeof App !== 'undefined') {
+                App.showToast('Speech recognition not supported.', 'warning');
+            }
             return;
         }
 
@@ -195,7 +197,7 @@ const UI = {
         recognition.maxAlternatives = 1;
 
         this.elements.voiceBtn.classList.add('listening');
-        
+
         recognition.start();
 
         recognition.onresult = (event) => {
@@ -252,32 +254,32 @@ const UI = {
             App.renderHistory(); // Refresh charts
         }
     },
-    
+
     // Original v7.2 Helper Functions ported to UI module
     getPlateLoading(weight) {
-        if(!weight || weight < 45) return "Bar";
+        if (!weight || weight < 45) return "Bar";
         let target = (weight - 45) / 2;
         let plates = [45, 35, 25, 10, 5, 2.5];
         let result = [];
-        for(let p of plates) {
-            while(target >= p) { result.push(p); target -= p; }
+        for (let p of plates) {
+            while (target >= p) { result.push(p); target -= p; }
         }
         return result.length ? result.join(" + ") : "Bar";
     },
 
     generateWarmup(target, liftType) {
-        if(!target || target < 45) return "";
+        if (!target || target < 45) return "";
         let warmups = [];
         let milestones = [135, 185, 225, 275, 315, 365, 405, 455, 495, 545, 585];
         if (liftType === 'bench') milestones = [135, 185, 225, 275, 315, 365, 405];
-        
+
         warmups.push("Bar");
-        milestones.forEach(m => { if(m <= target - 35) warmups.push(m); });
-        
-        let lastWeight = warmups.length > 1 ? warmups[warmups.length-1] : 45;
+        milestones.forEach(m => { if (m <= target - 35) warmups.push(m); });
+
+        let lastWeight = warmups.length > 1 ? warmups[warmups.length - 1] : 45;
         let gap = target - lastWeight;
-        
-        if(gap > 50) {
+
+        if (gap > 50) {
             let bridge = Math.round((lastWeight + (gap * 0.6)) / 5) * 5;
             if (bridge < target - 15) warmups.push(bridge);
         }
@@ -287,7 +289,7 @@ const UI = {
     renderChart(history, currentLift) {
         const ctx = this.elements.chartCanvas.getContext('2d');
         const data = history.map(e => e.heavySingle).filter(v => v > 0);
-        
+
         // Destroy old chart if exists
         if (this.chartInstance) {
             this.chartInstance.destroy();
@@ -323,7 +325,7 @@ const UI = {
     renderHeatmap(history) {
         const container = this.elements.heatmapContainer;
         container.innerHTML = '';
-        
+
         // Simple 30 day visualization
         const now = new Date();
         const dates = [];
@@ -332,7 +334,7 @@ const UI = {
             d.setDate(now.getDate() - i);
             dates.push(d.toISOString().split('T')[0]);
         }
-        
+
         dates.forEach(date => {
             const div = document.createElement('div');
             const hasSession = history.some(h => h.date === date);

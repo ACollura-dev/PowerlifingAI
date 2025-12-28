@@ -12,7 +12,42 @@ const App = {
         pivotActive: false,
         currentDate: new Date().toISOString().split('T')[0],
         editingId: null,
-        editingUser: null
+        editingUser: null,
+        advancedEditOpen: false
+    },
+
+    // ==========================================
+    // Toast Notifications (replaces alert())
+    // ==========================================
+
+    showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `<span class="toast-message">${message}</span>`;
+        container.appendChild(toast);
+
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            toast.classList.add('hiding');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    },
+
+    toggleAdvancedEdit() {
+        const section = document.getElementById('advancedEditSection');
+        const toggleText = document.getElementById('advancedToggleText');
+        this.state.advancedEditOpen = !this.state.advancedEditOpen;
+
+        if (this.state.advancedEditOpen) {
+            section.style.display = 'block';
+            toggleText.textContent = '▲ Hide Advanced Fields';
+        } else {
+            section.style.display = 'none';
+            toggleText.textContent = '▼ Show All Fields';
+        }
     },
 
     async init() {
@@ -557,13 +592,13 @@ const App = {
 
                 console.log('Saving entry:', entry);
                 Storage.addSession(this.state.currentUser, entry);
-                alert(`Logged for ${this.state.currentUser}! Next Wave Target: ${nextVol.weight} for 3x${nextVol.reps}`);
+                this.showToast(`Logged! Next Wave: ${nextVol.weight} lbs for 3x${nextVol.reps}`, 'success');
 
             } else {
                 // Volume Mode
                 console.log('Volume mode logging');
                 if (h.length === 0) {
-                    alert("Log Heavy day first (per v7.2 logic).");
+                    this.showToast('Log Heavy day first.', 'warning');
                     return;
                 }
 
@@ -577,7 +612,7 @@ const App = {
                 }
 
                 if (targetIndex === -1) {
-                    alert("No previous Heavy session found to attach Volume to.");
+                    this.showToast('No previous Heavy session found.', 'warning');
                     return;
                 }
 
@@ -594,7 +629,7 @@ const App = {
                 const key = `vena_history_${this.state.currentUser}`;
                 localStorage.setItem(key, JSON.stringify(fullHistory));
                 console.log('Updated volume entry:', last);
-                alert(`Wave Logged for ${this.state.currentUser}!`);
+                this.showToast('Wave logged!', 'success');
             }
 
             // Train AI
@@ -603,7 +638,7 @@ const App = {
             location.reload();
         } catch (error) {
             console.error('Error in calculateAndSave:', error);
-            alert('Failed to log session. Check console for details.');
+            this.showToast('Failed to log session.', 'error');
         }
     },
 
@@ -633,7 +668,7 @@ const App = {
                     location.reload();
                 } catch (error) {
                     console.error('Error in clearHistory:', error);
-                    alert('Failed to clear history. Check console for details.');
+                    this.showToast('Failed to clear history.', 'error');
                 }
             }
         }, 0);
@@ -734,7 +769,7 @@ const App = {
         localStorage.setItem(key, JSON.stringify(fullHistory));
         this.closeEditModal();
         this.refreshView();
-        alert('Session updated.');
+        this.showToast('Session updated.', 'success');
     },
 
     deleteSession(id) {
@@ -755,7 +790,7 @@ const App = {
         const key = `vena_history_${this.state.currentUser}`;
         localStorage.setItem(key, JSON.stringify(fullHistory));
         this.refreshView();
-        alert('Session deleted.');
+        this.showToast('Session deleted.', 'success');
         console.log('Session deleted successfully');
     },
 
