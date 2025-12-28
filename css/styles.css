@@ -187,6 +187,138 @@ tbody tr:nth-child(even) { background: #0f172a; }
     display: block;
 }
 
+/* =========================================
+   NEW STEP-BASED UI STYLES
+   ========================================= */
+
+/* Step Headers */
+.step-header {
+    font-size: 1rem;
+    color: #a5b4fc;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+/* Pivot Card - more compact */
+.pivot-card {
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.75rem;
+}
+.pivot-label {
+    color: #c7d2fe;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+.pivot-sublabel {
+    font-size: 0.7rem;
+    color: #818cf8;
+}
+
+/* Readiness Card */
+.readiness-card {
+    background: linear-gradient(135deg, #1e293b 0%, #1e1b4b 100%);
+    border: 1px solid #4338ca;
+}
+.readiness-row {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+.readiness-item {
+    flex: 1;
+    min-width: 120px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.readiness-label {
+    font-size: 0.85rem;
+    color: #e2e8f0;
+    min-width: 60px;
+}
+.readiness-item input[type="range"] {
+    flex: 1;
+    margin-bottom: 0;
+    padding: 0;
+}
+.ai-target {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    border: 1px dashed #6366f1;
+    border-radius: 0.5rem;
+    text-align: center;
+    background: rgba(99, 102, 241, 0.1);
+}
+
+/* Mode Card - Enhanced styling */
+.mode-card {
+    background: #0f172a;
+}
+#modeSwitcher {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+.mode-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    background: #1e293b;
+    border: 2px solid #334155;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.mode-btn:hover {
+    border-color: #475569;
+}
+.mode-btn.active {
+    border-color: #38bdf8;
+    background: #0c4a6e;
+}
+.squat-theme .mode-btn.active {
+    border-color: #38bdf8;
+    background: linear-gradient(135deg, #0c4a6e 0%, #1e293b 100%);
+}
+.bench-theme .mode-btn.active {
+    border-color: #f472b6;
+    background: linear-gradient(135deg, #831843 0%, #1e293b 100%);
+}
+.mode-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+}
+.mode-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #e2e8f0;
+}
+.mode-desc {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin-top: 0.25rem;
+}
+
+/* Input Header */
+.input-header {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+.input-header input[type="date"] {
+    flex: 1;
+    margin-bottom: 0;
+}
+.input-header .icon-btn {
+    margin-top: 0;
+    padding: 0.6rem 0.8rem;
+}
+
 /* Heatmap */
 .heatmap-grid {
   display: grid;

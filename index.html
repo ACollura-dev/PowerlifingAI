@@ -45,20 +45,16 @@
         <!-- NEW: Methodology Status Banner -->
         <div id="methodologyStatus" class="methodology-box" style="display:none;"></div>
 
-        <div id="modeSwitcher">
-            <div id="btnHeavy" class="mode-btn">HEAVY (Skill)</div>
-            <div id="btnVol" class="mode-btn">VOLUME (Wave)</div>
-        </div>
-
+        <!-- System Status with integrated Pivot -->
         <div id="systemStatus" class="status-box">Checking System Status...</div>
         <div id="protocolBanner" class="protocol-banner">⚠️ FATIGUE LIMIT EXCEEDED<br>SYSTEM OVERRIDE: PIVOT MODE ENGAGED</div>
-
-        <!-- Pivot Card -->
-        <div class="card" style="padding: 0.5rem 1rem;">
+        
+        <!-- Pivot Toggle (inline with status) -->
+        <div class="card pivot-card">
             <div class="pivot-container">
                 <div>
-                    <div style="color: #c7d2fe; font-size: 0.85rem; font-weight: bold;">Pivot Mode (Recovery)</div>
-                    <div style="font-size:0.7rem; color:#818cf8;">Reduces Loads & Pauses Wave</div>
+                    <div class="pivot-label">🔄 Recovery Mode</div>
+                    <div class="pivot-sublabel">Reduces intensity for recovery</div>
                 </div>
                 <label class="pivot-switch">
                     <input type="checkbox" id="pivotMode">
@@ -66,33 +62,50 @@
                 </label>
             </div>
         </div>
+
         
-        <!-- NEW: Readiness Card (AI Input) -->
-        <div class="card">
-            <h2 style="font-size: 1rem; color: #a5b4fc; margin-bottom: 0.5rem;">🧠 AI Readiness</h2>
-            <div class="row">
-                <div class="range-group">
-                    <label>Sleep (1-5)</label>
+        <!-- STEP 1: Quick Readiness Check -->
+        <div class="card readiness-card">
+            <h2 class="step-header">📋 Step 1: How are you today?</h2>
+            <div class="readiness-row">
+                <div class="readiness-item">
+                    <span class="readiness-label">😴 Sleep</span>
                     <input type="range" id="sleep-score" min="1" max="5" value="3" step="1">
                     <span id="sleep-val" class="range-val">3</span>
                 </div>
-                <div class="range-group">
-                    <label>Stress (1-5)</label>
+                <div class="readiness-item">
+                    <span class="readiness-label">😰 Stress</span>
                     <input type="range" id="stress-score" min="1" max="5" value="3" step="1">
                     <span id="stress-val" class="range-val">3</span>
                 </div>
             </div>
-            <div id="ai-prediction">AI Target: Predicting...</div>
+            <div id="ai-prediction" class="ai-target">AI Target: Calculating...</div>
         </div>
-
-        <!-- Input Card -->
+        
+        <!-- STEP 2: Choose Your Session Type -->
+        <div class="card mode-card">
+            <h2 class="step-header">🏋️ Step 2: Today's Session</h2>
+            <div id="modeSwitcher">
+                <div id="btnHeavy" class="mode-btn">
+                    <span class="mode-icon">💪</span>
+                    <span class="mode-title">HEAVY DAY</span>
+                    <span class="mode-desc">Top single + backdowns</span>
+                </div>
+                <div id="btnVol" class="mode-btn">
+                    <span class="mode-icon">📈</span>
+                    <span class="mode-title">VOLUME DAY</span>
+                    <span class="mode-desc">Wave progression 3x4-6</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- STEP 3: Log Your Work -->
         <div class="card" id="inputCard">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h2>Session Log (<span id="loggerName">Anthony</span>)</h2>
+            <h2 class="step-header">📝 Step 3: Log Session (<span id="loggerName">Anthony</span>)</h2>
+            <div class="input-header">
+                <input id="date" type="date">
                 <button id="voice-btn" class="icon-btn" title="Voice Command">🎤</button>
             </div>
-            
-            <input id="date" type="date">
 
             <!-- HEAVY SECTION -->
             <div id="sectionHeavy">
