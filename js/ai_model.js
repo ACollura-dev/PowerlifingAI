@@ -6,6 +6,7 @@
 const AIModel = {
     model: null,
     isTraining: false,
+    isTrained: false,
 
     async init() {
         // Define a simple linear regression model
@@ -86,7 +87,8 @@ const AIModel = {
             
             xTensor.dispose();
             yTensor.dispose();
-            console.log("Model training complete.");
+            this.isTrained = true;
+            console.log("Model training complete. isTrained = true");
         }
         
         this.isTraining = false;
@@ -95,13 +97,12 @@ const AIModel = {
     /**
      * Predict target daily max
      * @param {Object} inputs - {sleep: 1-5, stress: 1-5, daysSinceLast: number}
-     * @returns {number} Predicted Weight
+     * @returns {number} Predicted Weight (or null if model not trained)
      */
     predict(inputs) {
-        if (!this.model) return null;
-        
-        // If no training has happened (weights are random), return a safe fallback or null
-        // For this demo, we assume training happened or we use heuristics if not.
+        // Return null if model doesn't exist or hasn't been trained yet
+        // This triggers the heuristic fallback in App.updatePrediction()
+        if (!this.model || !this.isTrained) return null;
         
         const normSleep = inputs.sleep / 5;
         // FIX: Invert Stress for prediction too
