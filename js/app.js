@@ -198,6 +198,9 @@ const App = {
 
         // AI Prediction
         this.updatePrediction();
+
+        // Update Analytics Dashboard
+        this.updateAnalyticsDashboard();
     },
 
     // ==========================================
@@ -907,14 +910,29 @@ const App = {
         // Find days since last session
         const h = this.getFilteredHistory();
         let daysSince = 7;
+        let lastRpe = 8;
+        let fatigue = 50;
+        let trend = 50;
+
         if (h.length > 0) {
             const last = h[h.length - 1];
             const diff = Math.abs(new Date() - new Date(last.date));
             daysSince = Math.ceil(diff / (1000 * 60 * 60 * 24));
+            lastRpe = last.heavyRpe || 8;
+
+            // Get fatigue score if Analytics is available
+            if (typeof Analytics !== 'undefined') {
+                const fatigueData = Analytics.calculateFatigueScore(h, this.state.currentLift);
+                if (fatigueData) fatigue = fatigueData.score;
+
+                const strengthData = Analytics.getStrengthRatio(h, this.state.currentLift);
+                if (strengthData) trend = strengthData.ratio;
+            }
         }
 
         const prediction = AIModel.predict({
-            sleep, stress, daysSinceLast: daysSince
+            sleep, stress, daysSinceLast: daysSince,
+            lastRpe, fatigue, trend
         });
 
         const display = document.getElementById('ai-prediction');
@@ -933,6 +951,149 @@ const App = {
             const heuristic = AIModel.heuristicPredict(base, sleep, stress);
             display.innerHTML = `AI Target (Est): <span style="color:#94a3b8;">${heuristic} lbs</span> <span style="font-size:0.7rem; color:#64748b;">(Need 5+ sessions for ML)</span>`;
         }
+    },
+
+    // ==========================================
+    // Analytics Dashboard
+    // ==========================================
+
+    updateAnalyticsDashboard() {
+        if (typeof Analytics === 'undefined') return;
+
+        const history = this.getFilteredHistory();
+        const liftType = this.state.currentLift;
+
+        // Update Training Insights
+        this.renderInsights(history, liftType);
+
+        // Update Stats Cards
+        this.updateStatsCards(history, liftType);
+
+        // Update Tonnage Chart
+        this.renderTonnageChart(history);
+    },
+
+    renderInsights(history, liftType) {
+        const panel = document.getElementById('insightsPanel');
+        if (!panel) return;
+
+        const insights = Analytics.generateInsights(history, liftType);
+
+        if (insights.length === 0) {
+            panel.innerHTML = `<div class="insight-item info">
+                <span class="insight-icon">📊</span>
+                <div class="insight-content">
+                    <div class="insight-title">Need More Data</div>
+                    <div class="insight-text">Log more sessions to unlock training insights.</div>
+                </div>
+            </div>`;
+            return;
+        }
+
+        panel.innerHTML = insights.map(insight => `
+            <div class="insight-item ${insight.type}">
+                <span class="insight-icon">${insight.icon}</span>
+                <div class="insight-content">
+                    <div class="insight-title">${insight.title}</div>
+                    <div class="insight-text">${insight.text}</div>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    updateStatsCards(history, liftType) {
+        // e1RM
+        const strength = Analytics.getStrengthRatio(history, liftType);
+        const e1rmEl = document.getElementById('statE1RM');
+        const e1rmSub = document.getElementById('statE1RMsub');
+        if (e1rmEl && strength) {
+            e1rmEl.textContent = `${strength.current} lbs`;
+            e1rmSub.textContent = `${strength.ratio}% of peak (${strength.peak} lbs)`;
+        } else if (e1rmEl) {
+            e1rmEl.textContent = '—';
+            e1rmSub.textContent = 'Log heavy sessions';
+        }
+
+        // Weekly Tonnage
+        const tonnage = Analytics.calculateWeeklyTonnage(history, 0);
+        const lastWeekTonnage = Analytics.calculateWeeklyTonnage(history, 1);
+        const tonnageEl = document.getElementById('statTonnage');
+        const tonnageSub = document.getElementById('statTonnageSub');
+        if (tonnageEl) {
+            if (tonnage > 0) {
+                tonnageEl.textContent = `${(tonnage / 1000).toFixed(1)}k`;
+                const change = lastWeekTonnage > 0 ? ((tonnage - lastWeekTonnage) / lastWeekTonnage * 100) : 0;
+                const arrow = change > 0 ? '↑' : change < 0 ? '↓' : '→';
+                tonnageSub.textContent = `${arrow} ${Math.abs(change).toFixed(0)}% vs last week`;
+            } else {
+                tonnageEl.textContent = '—';
+                tonnageSub.textContent = 'This week';
+            }
+        }
+
+        // Fatigue
+        const fatigue = Analytics.calculateFatigueScore(history, liftType);
+        const fatigueEl = document.getElementById('statFatigue');
+        const fatigueFill = document.getElementById('fatigueFill');
+        if (fatigueEl && fatigue) {
+            fatigueEl.textContent = fatigue.level.charAt(0).toUpperCase() + fatigue.level.slice(1);
+            if (fatigueFill) {
+                fatigueFill.style.width = `${fatigue.score}%`;
+            }
+        } else if (fatigueEl) {
+            fatigueEl.textContent = '—';
+            if (fatigueFill) fatigueFill.style.width = '0%';
+        }
+    },
+
+    tonnageChart: null,
+
+    renderTonnageChart(history) {
+        const canvas = document.getElementById('tonnageChart');
+        if (!canvas || typeof Chart === 'undefined') return;
+
+        const tonnageHistory = Analytics.getTonnageHistory(history, 8);
+        const labels = tonnageHistory.map(t => t.label);
+        const data = tonnageHistory.map(t => t.tonnage / 1000); // Display in thousands
+
+        // Destroy existing chart
+        if (this.tonnageChart) {
+            this.tonnageChart.destroy();
+        }
+
+        const ctx = canvas.getContext('2d');
+        this.tonnageChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Tonnage (k lbs)',
+                    data: data,
+                    backgroundColor: data.map((_, i) =>
+                        i === data.length - 1 ? '#38bdf8' : '#334155'
+                    ),
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#1e293b' },
+                        ticks: { color: '#64748b' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#64748b' }
+                    }
+                }
+            }
+        });
     }
 };
 

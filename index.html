@@ -210,6 +210,50 @@
 
     <!-- VIEW: ANALYSIS -->
     <div id="view-analysis" class="view-section">
+
+        <!-- Training Insights Panel -->
+        <div class="card insights-card">
+            <h2>💡 Training Insights</h2>
+            <div id="insightsPanel" class="insights-container">
+                <div class="insight-item loading">
+                    <span class="insight-icon">⏳</span>
+                    <div class="insight-content">
+                        <div class="insight-title">Analyzing...</div>
+                        <div class="insight-text">Loading your training data</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Summary Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Estimated 1RM</div>
+                <div class="stat-value" id="statE1RM">—</div>
+                <div class="stat-sub" id="statE1RMsub">No data</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Weekly Tonnage</div>
+                <div class="stat-value" id="statTonnage">—</div>
+                <div class="stat-sub" id="statTonnageSub">This week</div>
+            </div>
+            <div class="stat-card fatigue-card">
+                <div class="stat-label">Fatigue Level</div>
+                <div class="stat-value" id="statFatigue">—</div>
+                <div class="fatigue-bar">
+                    <div class="fatigue-fill" id="fatigueFill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tonnage History Chart -->
+        <div class="card">
+            <h2>📊 Volume Load (8 Weeks)</h2>
+            <div id="tonnageChartContainer" class="chart-container">
+                <canvas id="tonnageChart"></canvas>
+            </div>
+        </div>
+
         <div class="card">
             <h2>Analysis & History</h2>
 
@@ -218,6 +262,7 @@
                 <input type="file" id="importFile" style="display:none">
                 <button class="btn-secondary" id="btnImportTrigger">Import</button>
             </div>
+
 
             <div id="graphContainer">
                 <canvas id="progress-chart" width="400" height="180"></canvas>
@@ -251,6 +296,7 @@
     <!-- App Logic Scripts -->
     <script src="js/storage.js"></script>
     <script src="js/ai_model.js"></script>
+    <script src="js/analytics.js"></script>
     <script src="js/logic_gates.js"></script>
     <script src="js/ui_renderer.js"></script>
     <script src="js/app.js"></script>
