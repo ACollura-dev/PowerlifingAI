@@ -252,6 +252,7 @@ const UI = {
             this.elements.viewPlanner.classList.remove('active');
             this.elements.viewAnalysis.classList.add('active');
             App.renderHistory(); // Refresh charts
+            App.updateAnalyticsDashboard(); // Update analytics
         }
     },
 
