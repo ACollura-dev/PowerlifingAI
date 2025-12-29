@@ -82,6 +82,23 @@
                 </div>
             </div>
             <div id="ai-prediction" class="ai-target">AI Target: Calculating...</div>
+
+            <!-- PR Readiness Indicator -->
+            <div id="prReadinessCard" class="pr-readiness-card" style="display:none;">
+                <div class="pr-header">
+                    <span id="prIcon" class="pr-icon">📊</span>
+                    <span id="prTitle" class="pr-title">PR Readiness</span>
+                    <span id="prScore" class="pr-score">—%</span>
+                </div>
+                <div id="prMessage" class="pr-message">Analyzing...</div>
+                <div id="prTarget" class="pr-target" style="display:none;"></div>
+                <button id="prDetailsToggle" class="pr-details-toggle" onclick="App.togglePRDetails()">
+                    ▼ Show Factors
+                </button>
+                <div id="prDetails" class="pr-details" style="display:none;">
+                    <div id="prFactorsList" class="pr-factors-list"></div>
+                </div>
+            </div>
         </div>
 
         <!-- STEP 2: Choose Your Session Type -->

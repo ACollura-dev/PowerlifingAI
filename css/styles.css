@@ -1253,3 +1253,163 @@ tbody tr:nth-child(even) {
     height: 200px;
     position: relative;
 }
+
+/* =========================================
+   PR READINESS INDICATOR
+   ========================================= */
+
+.pr-readiness-card {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 2px solid #334155;
+}
+
+.pr-readiness-card.optimal {
+    border-color: #22c55e;
+    background: linear-gradient(135deg, #052e16 0%, #0f172a 100%);
+}
+
+.pr-readiness-card.good {
+    border-color: #38bdf8;
+    background: linear-gradient(135deg, #082f49 0%, #0f172a 100%);
+}
+
+.pr-readiness-card.moderate {
+    border-color: #eab308;
+    background: linear-gradient(135deg, #422006 0%, #0f172a 100%);
+}
+
+.pr-readiness-card.low {
+    border-color: #ef4444;
+    background: linear-gradient(135deg, #450a0a 0%, #0f172a 100%);
+}
+
+.pr-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.pr-icon {
+    font-size: 1.5rem;
+}
+
+.pr-title {
+    flex: 1;
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.pr-score {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #38bdf8;
+}
+
+.pr-readiness-card.optimal .pr-score {
+    color: #22c55e;
+}
+
+.pr-readiness-card.good .pr-score {
+    color: #38bdf8;
+}
+
+.pr-readiness-card.moderate .pr-score {
+    color: #eab308;
+}
+
+.pr-readiness-card.low .pr-score {
+    color: #ef4444;
+}
+
+.pr-message {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.pr-target {
+    background: rgba(34, 197, 94, 0.2);
+    border: 1px solid #22c55e;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    text-align: center;
+    margin-bottom: 0.75rem;
+}
+
+.pr-target-label {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+}
+
+.pr-target-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #22c55e;
+}
+
+.pr-details-toggle {
+    width: 100%;
+    background: transparent;
+    border: 1px solid #334155;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    color: #64748b;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pr-details-toggle:hover {
+    background: rgba(51, 65, 85, 0.5);
+    color: #94a3b8;
+}
+
+.pr-details {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #334155;
+}
+
+.pr-factors-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+}
+
+@media (max-width: 480px) {
+    .pr-factors-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+.pr-factor {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0.6rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+}
+
+.pr-factor-name {
+    color: #94a3b8;
+}
+
+.pr-factor-value {
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.pr-factor.good .pr-factor-value {
+    color: #22c55e;
+}
+
+.pr-factor.bad .pr-factor-value {
+    color: #ef4444;
+}

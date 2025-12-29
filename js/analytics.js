@@ -298,5 +298,241 @@ const Analytics = {
         }
 
         return insights;
+    },
+
+    // ==========================================
+    // PR Readiness Score
+    // ==========================================
+
+    /**
+     * Calculate PR Readiness based on all available data
+     * Returns a 0-100 score with breakdown of factors
+     * 
+     * Factors considered:
+     * 1. Sleep quality (current input)
+     * 2. Stress level (current input)
+     * 3. Fatigue score (from history)
+     * 4. Strength ratio (how close to peak)
+     * 5. Days since last heavy session
+     * 6. Recent RPE patterns (not grinding)
+     * 7. Performance trend (rising, stable, falling)
+     * 8. Volume load (not overreached)
+     */
+    calculatePRReadiness(history, liftType, currentInputs = {}) {
+        const factors = {};
+        let totalScore = 0;
+        let maxPossible = 0;
+
+        // Default inputs if not provided
+        const sleep = currentInputs.sleep || 3;
+        const stress = currentInputs.stress || 3;
+
+        // Factor 1: Sleep Quality (0-15 points)
+        // 5 = 15pts, 4 = 12pts, 3 = 8pts, 2 = 4pts, 1 = 0pts
+        const sleepScore = Math.max(0, (sleep - 1) * 3.75);
+        factors.sleep = {
+            score: Math.round(sleepScore),
+            max: 15,
+            value: sleep,
+            good: sleep >= 4,
+            label: sleep >= 4 ? 'Well Rested' : sleep >= 3 ? 'Adequate' : 'Fatigued'
+        };
+        totalScore += sleepScore;
+        maxPossible += 15;
+
+        // Factor 2: Stress Level (0-15 points)
+        // 1 = 15pts (low stress), 5 = 0pts (high stress)
+        const stressScore = Math.max(0, (5 - stress) * 3.75);
+        factors.stress = {
+            score: Math.round(stressScore),
+            max: 15,
+            value: stress,
+            good: stress <= 2,
+            label: stress <= 2 ? 'Low Stress' : stress <= 3 ? 'Moderate' : 'High Stress'
+        };
+        totalScore += stressScore;
+        maxPossible += 15;
+
+        // Factor 3: Fatigue Score (0-20 points)
+        const fatigueData = this.calculateFatigueScore(history, liftType);
+        if (fatigueData) {
+            // Fatigue 0-30 = 20pts, 30-60 = 10pts, 60+ = 0pts
+            const fatigueScore = fatigueData.score < 30 ? 20 :
+                fatigueData.score < 60 ? 10 : 0;
+            factors.fatigue = {
+                score: fatigueScore,
+                max: 20,
+                value: fatigueData.score,
+                good: fatigueData.score < 30,
+                label: fatigueData.level.charAt(0).toUpperCase() + fatigueData.level.slice(1)
+            };
+            totalScore += fatigueScore;
+        } else {
+            factors.fatigue = { score: 10, max: 20, value: null, good: null, label: 'Unknown' };
+            totalScore += 10; // Neutral if no data
+        }
+        maxPossible += 20;
+
+        // Factor 4: Strength Ratio (0-15 points)
+        const strengthData = this.getStrengthRatio(history, liftType);
+        if (strengthData) {
+            // 95%+ = 15pts, 85-95% = 10pts, 75-85% = 5pts, <75% = 0pts
+            const ratioScore = strengthData.ratio >= 95 ? 15 :
+                strengthData.ratio >= 85 ? 10 :
+                    strengthData.ratio >= 75 ? 5 : 0;
+            factors.strengthRatio = {
+                score: ratioScore,
+                max: 15,
+                value: strengthData.ratio,
+                good: strengthData.ratio >= 90,
+                label: `${strengthData.ratio}% of Peak`
+            };
+            totalScore += ratioScore;
+        } else {
+            factors.strengthRatio = { score: 7, max: 15, value: null, good: null, label: 'Need Data' };
+            totalScore += 7;
+        }
+        maxPossible += 15;
+
+        // Factor 5: Days Since Last Heavy (0-10 points)
+        const recentHeavy = history.filter(s =>
+            s.type && s.type.includes(liftType) && s.heavySingle > 0
+        ).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+        if (recentHeavy) {
+            const daysSince = Math.ceil((new Date() - new Date(recentHeavy.date)) / (1000 * 60 * 60 * 24));
+            // 5-7 days = 10pts (optimal), 3-4 or 8-10 = 7pts, <3 or >10 = 3pts
+            const restScore = (daysSince >= 5 && daysSince <= 7) ? 10 :
+                (daysSince >= 3 && daysSince <= 10) ? 7 : 3;
+            factors.rest = {
+                score: restScore,
+                max: 10,
+                value: daysSince,
+                good: daysSince >= 5 && daysSince <= 7,
+                label: `${daysSince} days rest`
+            };
+            totalScore += restScore;
+        } else {
+            factors.rest = { score: 5, max: 10, value: null, good: null, label: 'No data' };
+            totalScore += 5;
+        }
+        maxPossible += 10;
+
+        // Factor 6: Recent RPE Pattern (0-10 points)
+        const recentSessions = history.filter(s =>
+            s.type && s.type.includes(liftType) && s.heavyRpe
+        ).slice(-5);
+
+        if (recentSessions.length >= 3) {
+            const avgRpe = recentSessions.reduce((sum, s) => sum + s.heavyRpe, 0) / recentSessions.length;
+            // Avg RPE 7-8 = 10pts (controlled), 8-8.5 = 7pts, >8.5 = 3pts
+            const rpeScore = avgRpe <= 8 ? 10 : avgRpe <= 8.5 ? 7 : 3;
+            factors.rpePattern = {
+                score: rpeScore,
+                max: 10,
+                value: avgRpe.toFixed(1),
+                good: avgRpe <= 8,
+                label: avgRpe <= 8 ? 'Controlled' : avgRpe <= 8.5 ? 'Moderate' : 'Grinding'
+            };
+            totalScore += rpeScore;
+        } else {
+            factors.rpePattern = { score: 5, max: 10, value: null, good: null, label: 'Need data' };
+            totalScore += 5;
+        }
+        maxPossible += 10;
+
+        // Factor 7: Performance Trend (0-10 points)
+        const e1rmHistory = this.getE1RMHistory(history, liftType);
+        if (e1rmHistory.length >= 3) {
+            const last3 = e1rmHistory.slice(-3).map(s => s.e1rm);
+            const trend = last3[2] > last3[0] ? 'rising' :
+                last3[2] === last3[0] ? 'stable' : 'falling';
+            const trendScore = trend === 'rising' ? 10 : trend === 'stable' ? 7 : 3;
+            factors.trend = {
+                score: trendScore,
+                max: 10,
+                value: trend,
+                good: trend === 'rising',
+                label: trend.charAt(0).toUpperCase() + trend.slice(1)
+            };
+            totalScore += trendScore;
+        } else {
+            factors.trend = { score: 5, max: 10, value: null, good: null, label: 'Need data' };
+            totalScore += 5;
+        }
+        maxPossible += 10;
+
+        // Factor 8: Volume Load Check (0-5 points)
+        const tonnageHistory = this.getTonnageHistory(history, 3);
+        if (tonnageHistory.length >= 2) {
+            const thisWeek = tonnageHistory[tonnageHistory.length - 1].tonnage;
+            const lastWeek = tonnageHistory[tonnageHistory.length - 2].tonnage;
+            const change = lastWeek > 0 ? ((thisWeek - lastWeek) / lastWeek * 100) : 0;
+            // Volume stable or down = 5pts (recovered), up >15% = 2pts (accumulated fatigue)
+            const volumeScore = change <= 15 ? 5 : 2;
+            factors.volume = {
+                score: volumeScore,
+                max: 5,
+                value: change.toFixed(0),
+                good: change <= 15,
+                label: change <= -10 ? 'Deloaded' : change <= 15 ? 'Stable' : 'High'
+            };
+            totalScore += volumeScore;
+        } else {
+            factors.volume = { score: 3, max: 5, value: null, good: null, label: 'Need data' };
+            totalScore += 3;
+        }
+        maxPossible += 5;
+
+        // Calculate final percentage
+        const readinessPercent = Math.round((totalScore / maxPossible) * 100);
+
+        // Determine recommendation
+        let recommendation;
+        let suggestedTarget = null;
+
+        if (readinessPercent >= 85) {
+            recommendation = {
+                level: 'optimal',
+                icon: '🔥',
+                title: 'GO FOR IT!',
+                text: 'Conditions are optimal for a PR attempt today.'
+            };
+            // Suggest a target 2.5-5% above current
+            if (strengthData) {
+                suggestedTarget = Math.round((strengthData.peak * 1.025) / 5) * 5;
+            }
+        } else if (readinessPercent >= 70) {
+            recommendation = {
+                level: 'good',
+                icon: '💪',
+                title: 'Push if Feeling Good',
+                text: 'Solid conditions. Consider a PR if warmups feel great.'
+            };
+            if (strengthData) {
+                suggestedTarget = strengthData.peak;
+            }
+        } else if (readinessPercent >= 50) {
+            recommendation = {
+                level: 'moderate',
+                icon: '📊',
+                title: 'Standard Training Day',
+                text: 'Stick to programmed work. Save the PR for better conditions.'
+            };
+        } else {
+            recommendation = {
+                level: 'low',
+                icon: '⚠️',
+                title: 'Recovery Day',
+                text: 'Conditions not ideal. Focus on technique and recovery.'
+            };
+        }
+
+        return {
+            score: readinessPercent,
+            factors,
+            recommendation,
+            suggestedTarget
+        };
     }
 };

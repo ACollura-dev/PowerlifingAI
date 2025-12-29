@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vena-ai-v2'; // Updated to bust cache
+const CACHE_NAME = 'vena-ai-v3'; // Updated for PR Readiness feature
 const ASSETS_TO_CACHE = [
   './index.html',
   './manifest.json',

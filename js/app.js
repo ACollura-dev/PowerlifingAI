@@ -13,7 +13,8 @@ const App = {
         currentDate: new Date().toISOString().split('T')[0],
         editingId: null,
         editingUser: null,
-        advancedEditOpen: false
+        advancedEditOpen: false,
+        prDetailsOpen: false
     },
 
     // ==========================================
@@ -47,6 +48,20 @@ const App = {
         } else {
             section.style.display = 'none';
             toggleText.textContent = '▼ Show All Fields';
+        }
+    },
+
+    togglePRDetails() {
+        const details = document.getElementById('prDetails');
+        const toggle = document.getElementById('prDetailsToggle');
+        this.state.prDetailsOpen = !this.state.prDetailsOpen;
+
+        if (this.state.prDetailsOpen) {
+            details.style.display = 'block';
+            toggle.textContent = '▲ Hide Factors';
+        } else {
+            details.style.display = 'none';
+            toggle.textContent = '▼ Show Factors';
         }
     },
 
@@ -951,6 +966,74 @@ const App = {
             const heuristic = AIModel.heuristicPredict(base, sleep, stress);
             display.innerHTML = `AI Target (Est): <span style="color:#94a3b8;">${heuristic} lbs</span> <span style="font-size:0.7rem; color:#64748b;">(Need 5+ sessions for ML)</span>`;
         }
+
+        // Update PR Readiness
+        this.updatePRReadiness(sleep, stress);
+    },
+
+    // ==========================================
+    // PR Readiness Indicator
+    // ==========================================
+
+    updatePRReadiness(sleep, stress) {
+        if (typeof Analytics === 'undefined') return;
+
+        const card = document.getElementById('prReadinessCard');
+        if (!card) return;
+
+        const history = this.getFilteredHistory();
+        const liftType = this.state.currentLift;
+
+        // Need at least a few sessions for meaningful analysis
+        if (history.length < 2) {
+            card.style.display = 'none';
+            return;
+        }
+
+        // Calculate PR Readiness
+        const prData = Analytics.calculatePRReadiness(history, liftType, { sleep, stress });
+
+        // Show the card
+        card.style.display = 'block';
+        card.className = `pr-readiness-card ${prData.recommendation.level}`;
+
+        // Update elements
+        document.getElementById('prIcon').textContent = prData.recommendation.icon;
+        document.getElementById('prTitle').textContent = prData.recommendation.title;
+        document.getElementById('prScore').textContent = `${prData.score}%`;
+        document.getElementById('prMessage').textContent = prData.recommendation.text;
+
+        // Suggested target
+        const targetEl = document.getElementById('prTarget');
+        if (prData.suggestedTarget && prData.recommendation.level === 'optimal') {
+            targetEl.style.display = 'block';
+            targetEl.innerHTML = `
+                <div class="pr-target-label">Suggested PR Target</div>
+                <div class="pr-target-value">${prData.suggestedTarget} lbs</div>
+            `;
+        } else {
+            targetEl.style.display = 'none';
+        }
+
+        // Factor breakdown
+        const factorNames = {
+            sleep: '😴 Sleep',
+            stress: '😰 Stress',
+            fatigue: '⚡ Fatigue',
+            strengthRatio: '💪 Strength',
+            rest: '🛏️ Rest Days',
+            rpePattern: '📊 RPE Pattern',
+            trend: '📈 Trend',
+            volume: '🏋️ Volume'
+        };
+
+        const factorsList = document.getElementById('prFactorsList');
+        factorsList.innerHTML = Object.entries(prData.factors).map(([key, factor]) => `
+            <div class="pr-factor ${factor.good === true ? 'good' : factor.good === false ? 'bad' : ''}">
+                <span class="pr-factor-name">${factorNames[key] || key}</span>
+                <span class="pr-factor-value">${factor.label}</span>
+            </div>
+        `).join('');
     },
 
     // ==========================================
