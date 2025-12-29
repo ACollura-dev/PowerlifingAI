@@ -917,54 +917,31 @@ const App = {
     },
 
     updatePrediction() {
-        if (typeof AIModel === 'undefined') return;
-
         const sleep = parseInt(UI.elements.sleepInput.value);
         const stress = parseInt(UI.elements.stressInput.value);
-
-        // Find days since last session
-        const h = this.getFilteredHistory();
-        let daysSince = 7;
-        let lastRpe = 8;
-        let fatigue = 50;
-        let trend = 50;
-
-        if (h.length > 0) {
-            const last = h[h.length - 1];
-            const diff = Math.abs(new Date() - new Date(last.date));
-            daysSince = Math.ceil(diff / (1000 * 60 * 60 * 24));
-            lastRpe = last.heavyRpe || 8;
-
-            // Get fatigue score if Analytics is available
-            if (typeof Analytics !== 'undefined') {
-                const fatigueData = Analytics.calculateFatigueScore(h, this.state.currentLift);
-                if (fatigueData) fatigue = fatigueData.score;
-
-                const strengthData = Analytics.getStrengthRatio(h, this.state.currentLift);
-                if (strengthData) trend = strengthData.ratio;
-            }
-        }
-
-        const prediction = AIModel.predict({
-            sleep, stress, daysSinceLast: daysSince,
-            lastRpe, fatigue, trend
-        });
-
         const display = document.getElementById('ai-prediction');
-        if (prediction) {
-            display.innerHTML = `AI Target: <span style="color:#38bdf8; font-weight:bold;">${prediction} lbs</span>`;
-        } else {
-            // Heuristic Fallback - use last heavy single or defaults
-            let base = (this.state.currentLift === 'squat' ? 500 : 315);
+        const h = this.getFilteredHistory();
 
-            // Try to get a better baseline from history
-            const lastHeavy = h.filter(s => s.heavySingle > 0).slice(-1)[0];
-            if (lastHeavy && lastHeavy.heavySingle) {
-                base = lastHeavy.heavySingle;
+        // Use Analytics-based target (replaces unreliable ML model)
+        if (typeof Analytics !== 'undefined' && h.length >= 2) {
+            const dailyTarget = Analytics.calculateDailyTarget(h, this.state.currentLift, { sleep, stress });
+
+            if (dailyTarget) {
+                // Check if PR-ready - hide AI Target to avoid redundancy
+                if (dailyTarget.isReady) {
+                    display.innerHTML = `<span style="color:#22c55e;">🔥 See PR Target below</span>`;
+                } else {
+                    // Show analytics-based daily target
+                    const readinessLabel = dailyTarget.percentage >= 90 ? 'Great' :
+                        dailyTarget.percentage >= 80 ? 'Good' : 'Moderate';
+                    display.innerHTML = `Today's Target: <span style="color:#38bdf8; font-weight:bold;">${dailyTarget.target} lbs</span> <span style="font-size:0.75rem; color:#64748b;">(${dailyTarget.percentage}% of e1RM - ${readinessLabel})</span>`;
+                }
+            } else {
+                display.innerHTML = `<span style="color:#64748b;">Log more sessions to get target</span>`;
             }
-
-            const heuristic = AIModel.heuristicPredict(base, sleep, stress);
-            display.innerHTML = `AI Target (Est): <span style="color:#94a3b8;">${heuristic} lbs</span> <span style="font-size:0.7rem; color:#64748b;">(Need 5+ sessions for ML)</span>`;
+        } else {
+            // Fallback for new users with no data
+            display.innerHTML = `<span style="color:#64748b;">Log 2+ sessions to unlock AI targets</span>`;
         }
 
         // Update PR Readiness

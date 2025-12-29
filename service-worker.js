@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vena-ai-v3'; // Updated for PR Readiness feature
+const CACHE_NAME = 'vena-ai-v4'; // Analytics-based target
 const ASSETS_TO_CACHE = [
   './index.html',
   './manifest.json',

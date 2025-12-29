@@ -38,6 +38,54 @@ const Analytics = {
         return Math.round(e1rm / 5) * 5; // Round to nearest 5
     },
 
+    /**
+     * Calculate recommended daily training target based on e1RM and readiness
+     * This replaces the unreliable ML model prediction
+     * 
+     * @param {Array} history - Training history
+     * @param {string} liftType - 'squat' or 'bench'
+     * @param {Object} inputs - { sleep: 1-5, stress: 1-5 }
+     * @returns {Object} { target, percentage, e1rm, isReady }
+     */
+    calculateDailyTarget(history, liftType, inputs = {}) {
+        const sleep = inputs.sleep || 3;
+        const stress = inputs.stress || 3;
+
+        // Get current e1RM from recent history
+        const strengthData = this.getStrengthRatio(history, liftType);
+        if (!strengthData || !strengthData.current) {
+            return null;
+        }
+
+        const e1rm = strengthData.current;
+
+        // Calculate readiness factor (0.70 - 1.00)
+        // Sleep 5, Stress 1 = 100% (1.00)
+        // Sleep 1, Stress 5 = 70% (0.70)
+        const sleepFactor = (sleep - 1) / 4; // 0 to 1
+        const stressFactor = (5 - stress) / 4; // 0 to 1 (inverted)
+
+        // Weighted average: sleep 55%, stress 45%
+        const readinessFactor = (sleepFactor * 0.55 + stressFactor * 0.45);
+
+        // Scale to 70-100% range
+        const percentage = 70 + (readinessFactor * 30);
+
+        // Calculate target
+        const target = Math.round((e1rm * percentage / 100) / 5) * 5;
+
+        // Check if this is a PR-ready day (>= 95%)
+        const isReady = percentage >= 95;
+
+        return {
+            target,
+            percentage: Math.round(percentage),
+            e1rm,
+            isReady,
+            peak: strengthData.peak
+        };
+    },
+
     // ==========================================
     // Weekly Tonnage
     // ==========================================
