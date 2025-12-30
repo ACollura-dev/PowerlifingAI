@@ -1413,3 +1413,292 @@ tbody tr:nth-child(even) {
 .pr-factor.bad .pr-factor-value {
     color: #ef4444;
 }
+
+/* =========================================
+   STRENGTH COMPARISON / PERCENTILE RANKING
+   ========================================= */
+
+/* Main Comparison Card */
+.strength-comparison-card {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e293b 100%);
+    border: 2px solid #6366f1;
+    border-radius: 1rem;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.strength-comparison-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+/* Header */
+.comparison-header {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.comparison-title {
+    font-size: 0.85rem;
+    color: #a5b4fc;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.25rem;
+}
+
+/* Giant Percentile Display */
+.percentile-display {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.percentile-number {
+    font-size: 3.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #22c55e 0%, #38bdf8 50%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    animation: percentilePulse 3s ease-in-out infinite;
+}
+
+@keyframes percentilePulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.9;
+        transform: scale(1.02);
+    }
+}
+
+.percentile-label {
+    font-size: 1rem;
+    color: #e2e8f0;
+    margin-top: 0.25rem;
+}
+
+/* Motivational Message */
+.comparison-message {
+    text-align: center;
+    font-size: 1.1rem;
+    color: #fbbf24;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+/* Classification Badge */
+.classification-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin: 0 auto;
+    justify-content: center;
+}
+
+.classification-badge.elite {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #0f172a;
+}
+
+.classification-badge.master {
+    background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+    color: #fff;
+}
+
+.classification-badge.class-i {
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+    color: #fff;
+}
+
+.classification-badge.class-ii {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+    color: #0f172a;
+}
+
+.classification-badge.class-iii {
+    background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+    color: #fff;
+}
+
+.classification-badge.class-iv {
+    background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%);
+    color: #fff;
+}
+
+.classification-badge.class-v {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+    color: #fff;
+}
+
+/* Weight Class Info */
+.weight-class-info {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-top: 0.75rem;
+}
+
+/* Individual Lift Breakdown */
+.lift-breakdown {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.lift-breakdown-title {
+    font-size: 0.75rem;
+    color: #a5b4fc;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+
+.lift-breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.lift-breakdown-name {
+    color: #e2e8f0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.lift-breakdown-stats {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.lift-breakdown-weight {
+    color: #94a3b8;
+    font-size: 0.9rem;
+}
+
+.lift-breakdown-percentile {
+    font-weight: 700;
+    font-size: 1rem;
+    min-width: 50px;
+    text-align: right;
+}
+
+.lift-breakdown-percentile.high {
+    color: #22c55e;
+}
+
+.lift-breakdown-percentile.medium {
+    color: #38bdf8;
+}
+
+.lift-breakdown-percentile.low {
+    color: #eab308;
+}
+
+/* User Settings Panel */
+.user-settings-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.settings-title {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.settings-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.settings-row>div {
+    flex: 1;
+    min-width: 120px;
+}
+
+.settings-row label {
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.settings-row input,
+.settings-row select {
+    margin-bottom: 0;
+}
+
+/* No Data State */
+.comparison-no-data {
+    text-align: center;
+    padding: 2rem;
+    color: #64748b;
+}
+
+.comparison-no-data-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.comparison-no-data-text {
+    font-size: 0.9rem;
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+    .percentile-number {
+        font-size: 3rem;
+    }
+
+    .comparison-message {
+        font-size: 1rem;
+    }
+
+    .lift-breakdown-row {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+
+    .lift-breakdown-stats {
+        justify-content: center;
+    }
+
+    .settings-row {
+        flex-direction: column;
+    }
+
+    .settings-row>div {
+        width: 100%;
+    }
+}

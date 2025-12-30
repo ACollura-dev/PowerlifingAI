@@ -87,6 +87,10 @@ const App = {
         const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
         document.getElementById('dayDisplay').textContent = `${days[d.getDay()]} Session`;
 
+        // Load user profile for percentile calculations
+        this.loadUserProfile();
+        this.initUserProfileListeners();
+
         // Train model
         this.trainModel();
     },
@@ -1031,6 +1035,10 @@ const App = {
 
         // Update Tonnage Chart
         this.renderTonnageChart(history);
+
+        // Update Strength Comparison (Percentile Rankings)
+        this.loadUserProfile();
+        this.updateStrengthComparison();
     },
 
     renderInsights(history, liftType) {
@@ -1154,6 +1162,185 @@ const App = {
                 }
             }
         });
+    },
+
+    // ==========================================
+    // Strength Comparison / Percentile Rankings
+    // ==========================================
+
+    loadUserProfile() {
+        const config = Storage.getConfig();
+        const userProfiles = config.userProfiles || {};
+        const profile = userProfiles[this.state.currentUser] || { bodyweight: 0, gender: 'male', age: 0 };
+
+        const ageInput = document.getElementById('userAge');
+        const bodyweightInput = document.getElementById('userBodyweight');
+        const genderSelect = document.getElementById('userGender');
+        const profileUserName = document.getElementById('profileUserName');
+
+        if (ageInput) ageInput.value = profile.age || '';
+        if (bodyweightInput) bodyweightInput.value = profile.bodyweight || '';
+        if (genderSelect) genderSelect.value = profile.gender || 'male';
+        if (profileUserName) profileUserName.textContent = this.state.currentUser;
+
+        return profile;
+    },
+
+    saveUserProfile() {
+        const ageInput = document.getElementById('userAge');
+        const bodyweightInput = document.getElementById('userBodyweight');
+        const genderSelect = document.getElementById('userGender');
+
+        const age = parseInt(ageInput?.value) || 0;
+        const bodyweight = parseFloat(bodyweightInput?.value) || 0;
+        const gender = genderSelect?.value || 'male';
+
+        const config = Storage.getConfig();
+        if (!config.userProfiles) config.userProfiles = {};
+        config.userProfiles[this.state.currentUser] = { age, bodyweight, gender };
+        Storage.saveConfig(config);
+
+        // Update the comparison display
+        this.updateStrengthComparison();
+    },
+
+    updateStrengthComparison() {
+        const contentEl = document.getElementById('comparisonContent');
+        if (!contentEl || typeof StrengthStandards === 'undefined') return;
+
+        const config = Storage.getConfig();
+        const profile = config.userProfiles?.[this.state.currentUser] || {};
+        const bodyweight = profile.bodyweight || 0;
+        const gender = profile.gender || 'male';
+        const age = profile.age || 0;
+
+        // Get best lifts from history
+        const history = this.getFilteredHistory();
+        const currentLift = this.state.currentLift;
+
+        // Find best single for current lift type
+        let best1RM = 0;
+        history.forEach(h => {
+            if (h.heavySingle && h.heavySingle > best1RM) {
+                best1RM = h.heavySingle;
+            }
+        });
+
+        // Get the other lift's best from combined history
+        const allHistory = Storage.getHistory(this.state.currentUser);
+        let otherLift = currentLift === 'squat' ? 'bench' : 'squat';
+        let otherBest1RM = 0;
+        allHistory.forEach(h => {
+            if (h.type && h.type.includes(otherLift) && h.heavySingle && h.heavySingle > otherBest1RM) {
+                otherBest1RM = h.heavySingle;
+            }
+        });
+
+        // If no data, show placeholder
+        if (!bodyweight || !age || best1RM === 0) {
+            let missingItems = [];
+            if (!age) missingItems.push('age');
+            if (!bodyweight) missingItems.push('weight');
+            if (best1RM === 0) missingItems.push('lift data');
+
+            contentEl.innerHTML = `
+                <div class="comparison-no-data">
+                    <div class="comparison-no-data-icon">📈</div>
+                    <div class="comparison-no-data-text">
+                        Enter your ${missingItems.join(' and ')} to see how you compare to other lifters!
+                    </div>
+                </div>`;
+            return;
+        }
+
+        // Calculate percentiles
+        const userData = {
+            squat1RM: currentLift === 'squat' ? best1RM : otherBest1RM,
+            bench1RM: currentLift === 'bench' ? best1RM : otherBest1RM,
+            bodyweight,
+            gender
+        };
+
+        const insights = StrengthStandards.getComparisonInsights(userData);
+        if (!insights || insights.averagePercentile === 0) {
+            contentEl.innerHTML = `
+                <div class="comparison-no-data">
+                    <div class="comparison-no-data-icon">📊</div>
+                    <div class="comparison-no-data-text">Need more lift data to calculate your ranking.</div>
+                </div>`;
+            return;
+        }
+
+        // Build simpler lift breakdown
+        let liftBreakdownHTML = '';
+        const lifts = [
+            { name: 'Squat', icon: '🏋️', data: insights.lifts.squat, weight: userData.squat1RM },
+            { name: 'Bench', icon: '💪', data: insights.lifts.bench, weight: userData.bench1RM }
+        ];
+
+        lifts.forEach(lift => {
+            if (lift.data && lift.data.percentile && lift.weight) {
+                const pctClass = lift.data.percentile >= 75 ? 'high' : lift.data.percentile >= 40 ? 'medium' : 'low';
+                liftBreakdownHTML += `
+                    <div class="lift-breakdown-row">
+                        <div class="lift-breakdown-name">${lift.icon} ${lift.name}</div>
+                        <div class="lift-breakdown-stats">
+                            <span class="lift-breakdown-weight">${lift.weight} lbs</span>
+                            <span class="lift-breakdown-percentile ${pctClass}">Top ${100 - lift.data.percentile}%</span>
+                        </div>
+                    </div>`;
+            }
+        });
+
+        // Simple, clear messaging without confusing classifications
+        let mainMessage = '';
+        const pct = insights.averagePercentile;
+        if (pct >= 95) {
+            mainMessage = `🏆 Elite! You're in the top 5% of lifters your size!`;
+        } else if (pct >= 90) {
+            mainMessage = `🔥 Exceptional! You're in the top 10% of lifters your size!`;
+        } else if (pct >= 75) {
+            mainMessage = `💪 Strong! You're in the top 25% of lifters your size!`;
+        } else if (pct >= 50) {
+            mainMessage = `📈 Above average! Keep pushing to climb higher!`;
+        } else {
+            mainMessage = `🎯 Building strength! Every PR moves you up the ranks!`;
+        }
+
+        // Show age context
+        const ageContext = age ? ` • ${age} years old` : '';
+
+        contentEl.innerHTML = `
+            <div class="percentile-display">
+                <div class="percentile-number">${insights.averagePercentile}%</div>
+                <div class="percentile-label">Stronger than ${insights.averagePercentile}% of ${gender === 'male' ? 'male' : 'female'} lifters at ${bodyweight} lbs${ageContext}</div>
+            </div>
+            <div class="comparison-message">${mainMessage}</div>
+            ${liftBreakdownHTML ? `
+                <div class="lift-breakdown">
+                    <div class="lift-breakdown-title">Your Best Lifts</div>
+                    ${liftBreakdownHTML}
+                </div>
+            ` : ''}
+        `;
+    },
+
+    initUserProfileListeners() {
+        const ageInput = document.getElementById('userAge');
+        const bodyweightInput = document.getElementById('userBodyweight');
+        const genderSelect = document.getElementById('userGender');
+
+        if (ageInput) {
+            ageInput.addEventListener('change', () => this.saveUserProfile());
+            ageInput.addEventListener('blur', () => this.saveUserProfile());
+        }
+        if (bodyweightInput) {
+            bodyweightInput.addEventListener('change', () => this.saveUserProfile());
+            bodyweightInput.addEventListener('blur', () => this.saveUserProfile());
+        }
+        if (genderSelect) {
+            genderSelect.addEventListener('change', () => this.saveUserProfile());
+        }
     }
 };
 

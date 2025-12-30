@@ -5,8 +5,8 @@
 
 // Polyfill for crypto.randomUUID for older browsers (e.g., iOS < 15.4)
 if (!crypto.randomUUID) {
-    crypto.randomUUID = function() {
-        return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    crypto.randomUUID = function () {
+        return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
             (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
         );
     };
@@ -33,6 +33,11 @@ const Storage = {
             trainingMaxes: {
                 squat: 500,
                 bench: 315
+            },
+            // User profiles for percentile calculations
+            userProfiles: {
+                Anthony: { bodyweight: 198, gender: "male", age: 28 },
+                Seth: { bodyweight: 181, gender: "male", age: 28 }
             }
         }
     },
@@ -73,7 +78,7 @@ const Storage = {
         // Ensure ID is unique
         sessionData.id = sessionData.id || crypto.randomUUID();
         history.push(sessionData);
-        
+
         const key = `${this.KEYS.HISTORY_PREFIX}${user}`;
         localStorage.setItem(key, JSON.stringify(history));
         return sessionData;
@@ -88,7 +93,7 @@ const Storage = {
             const filtered = history.filter(s => s.type === type);
             return filtered.length > 0 ? filtered[filtered.length - 1] : null;
         }
-        
+
         return history[history.length - 1];
     },
 
@@ -98,14 +103,14 @@ const Storage = {
             config: this.getConfig(),
             histories: {}
         };
-        
+
         data.config.users.forEach(user => {
             data.histories[user] = this.getHistory(user);
         });
 
-        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        
+
         const a = document.createElement('a');
         a.href = url;
         a.download = `vena_backup_${new Date().toISOString().split('T')[0]}.json`;
