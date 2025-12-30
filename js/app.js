@@ -1076,10 +1076,10 @@ const App = {
         const e1rmSub = document.getElementById('statE1RMsub');
         if (e1rmEl && strength) {
             e1rmEl.textContent = `${strength.current} lbs`;
-            e1rmSub.textContent = `${strength.ratio}% of peak (${strength.peak} lbs)`;
+            if (e1rmSub) e1rmSub.textContent = `${strength.ratio}% of peak (${strength.peak} lbs)`;
         } else if (e1rmEl) {
             e1rmEl.textContent = '—';
-            e1rmSub.textContent = 'Log heavy sessions';
+            if (e1rmSub) e1rmSub.textContent = 'Log heavy sessions';
         }
 
         // Weekly Tonnage
@@ -1092,10 +1092,10 @@ const App = {
                 tonnageEl.textContent = `${(tonnage / 1000).toFixed(1)}k`;
                 const change = lastWeekTonnage > 0 ? ((tonnage - lastWeekTonnage) / lastWeekTonnage * 100) : 0;
                 const arrow = change > 0 ? '↑' : change < 0 ? '↓' : '→';
-                tonnageSub.textContent = `${arrow} ${Math.abs(change).toFixed(0)}% vs last week`;
+                if (tonnageSub) tonnageSub.textContent = `${arrow} ${Math.abs(change).toFixed(0)}% vs last week`;
             } else {
                 tonnageEl.textContent = '—';
-                tonnageSub.textContent = 'This week';
+                if (tonnageSub) tonnageSub.textContent = 'This week';
             }
         }
 
