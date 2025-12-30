@@ -228,121 +228,112 @@
     <!-- VIEW: ANALYSIS -->
     <div id="view-analysis" class="view-section">
 
-        <!-- User Settings for Percentile Calculations -->
-        <div class="user-settings-card">
-            <div class="settings-title">⚙️ <span id="profileUserName">Your</span>'s Profile</div>
-            <div class="settings-row">
-                <div>
-                    <label for="userAge">Age</label>
-                    <input type="number" id="userAge" placeholder="e.g. 28" min="14" max="100" step="1">
+        <!-- Combined Profile + Percentile Card -->
+        <div id="strengthComparisonCard" class="strength-comparison-card">
+            <div class="comparison-header">
+                <div class="comparison-title">📊 <span id="profileUserName">Your</span> Strength Ranking</div>
+            </div>
+
+            <!-- Inline Profile Settings -->
+            <div class="profile-inline">
+                <div class="profile-field">
+                    <input type="number" id="userAge" placeholder="Age" min="14" max="100">
                 </div>
-                <div>
-                    <label for="userBodyweight">Weight (lbs)</label>
-                    <input type="number" id="userBodyweight" placeholder="e.g. 198" step="1">
+                <div class="profile-field">
+                    <input type="number" id="userBodyweight" placeholder="Weight" step="1">
+                    <span class="field-unit">lbs</span>
                 </div>
-                <div>
-                    <label for="userGender">Gender</label>
+                <div class="profile-field">
                     <select id="userGender">
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
+                        <option value="male">♂ Male</option>
+                        <option value="female">♀ Female</option>
                     </select>
                 </div>
             </div>
-        </div>
 
-        <!-- Strength Comparison Card -->
-        <div id="strengthComparisonCard" class="strength-comparison-card">
-            <div class="comparison-header">
-                <div class="comparison-title">📊 How You Compare</div>
-            </div>
             <div id="comparisonContent">
                 <div class="comparison-no-data">
                     <div class="comparison-no-data-icon">📈</div>
-                    <div class="comparison-no-data-text">Set your body weight above and log some sessions to see how you
-                        compare!</div>
+                    <div class="comparison-no-data-text">Enter your age and weight above, then log some sessions to see
+                        how you compare!</div>
                 </div>
             </div>
         </div>
 
-        <!-- Training Insights Panel -->
-        <div class="card insights-card">
-            <h2>💡 Training Insights</h2>
-            <div id="insightsPanel" class="insights-container">
-                <div class="insight-item loading">
-                    <span class="insight-icon">⏳</span>
-                    <div class="insight-content">
-                        <div class="insight-title">Analyzing...</div>
-                        <div class="insight-text">Loading your training data</div>
-                    </div>
-                </div>
+        <!-- Stats Summary - Compact Row -->
+        <div class="stats-row">
+            <div class="stat-compact">
+                <span class="stat-label">Est. 1RM</span>
+                <span class="stat-value" id="statE1RM">—</span>
             </div>
-        </div>
-
-        <!-- Stats Summary Cards -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">Estimated 1RM</div>
-                <div class="stat-value" id="statE1RM">—</div>
-                <div class="stat-sub" id="statE1RMsub">No data</div>
+            <div class="stat-compact">
+                <span class="stat-label">Weekly Vol</span>
+                <span class="stat-value" id="statTonnage">—</span>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Weekly Tonnage</div>
-                <div class="stat-value" id="statTonnage">—</div>
-                <div class="stat-sub" id="statTonnageSub">This week</div>
-            </div>
-            <div class="stat-card fatigue-card">
-                <div class="stat-label">Fatigue Level</div>
-                <div class="stat-value" id="statFatigue">—</div>
-                <div class="fatigue-bar">
+            <div class="stat-compact fatigue">
+                <span class="stat-label">Fatigue</span>
+                <span class="stat-value" id="statFatigue">—</span>
+                <div class="fatigue-bar-mini">
                     <div class="fatigue-fill" id="fatigueFill" style="width: 0%"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Tonnage History Chart -->
-        <div class="card">
-            <h2>📊 Volume Load (8 Weeks)</h2>
-            <div id="tonnageChartContainer" class="chart-container">
-                <canvas id="tonnageChart"></canvas>
+        <!-- Progress Chart - Collapsible -->
+        <details class="collapsible-section" open>
+            <summary class="section-toggle">📈 Progress Chart</summary>
+            <div class="section-content">
+                <div id="graphContainer">
+                    <canvas id="progress-chart" width="400" height="180"></canvas>
+                </div>
             </div>
-        </div>
+        </details>
 
-        <div class="card">
-            <h2>Analysis & History</h2>
-
-            <div style="margin-bottom: 0.5rem;">
-                <button class="btn-secondary" id="btnExport">Export ALL Data</button>
-                <input type="file" id="importFile" style="display:none">
-                <button class="btn-secondary" id="btnImportTrigger">Import</button>
+        <!-- Volume Chart - Collapsible -->
+        <details class="collapsible-section">
+            <summary class="section-toggle">📊 Volume History (8 Weeks)</summary>
+            <div class="section-content">
+                <div id="tonnageChartContainer" class="chart-container">
+                    <canvas id="tonnageChart"></canvas>
+                </div>
             </div>
+        </details>
 
-
-            <div id="graphContainer">
-                <canvas id="progress-chart" width="400" height="180"></canvas>
-            </div>
-
-            <div class="card" style="margin-top: 1rem; background: #020617;">
-                <h3>Consistency Heatmap</h3>
+        <!-- Consistency Heatmap - Collapsible -->
+        <details class="collapsible-section">
+            <summary class="section-toggle">🔥 Consistency Heatmap</summary>
+            <div class="section-content">
                 <div id="heatmap-container" class="heatmap-grid"></div>
             </div>
+        </details>
 
-            <div style="overflow-x:auto; max-height:200px; margin-top:1rem;">
-                <table id="historyTable">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Single</th>
-                            <th>Wave</th>
-                            <th>Weight</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+        <!-- Session History - Collapsible -->
+        <details class="collapsible-section">
+            <summary class="section-toggle">📋 Session History</summary>
+            <div class="section-content">
+                <div style="overflow-x:auto; max-height:250px;">
+                    <table id="historyTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Single</th>
+                                <th>Wave</th>
+                                <th>Weight</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
+        </details>
 
-            <button class="btn-secondary" style="background:#ef4444; margin-top:1rem;" id="btnClearHistory">Reset
-                Current User</button>
+        <!-- Data Management - Compact Footer -->
+        <div class="data-actions">
+            <button class="btn-icon" id="btnExport" title="Export Data">📤 Export</button>
+            <input type="file" id="importFile" style="display:none">
+            <button class="btn-icon" id="btnImportTrigger" title="Import Data">📥 Import</button>
+            <button class="btn-icon danger" id="btnClearHistory" title="Reset User">🗑️ Reset</button>
         </div>
     </div>
 
